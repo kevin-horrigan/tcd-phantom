@@ -48,6 +48,9 @@ public repo is not the place to redistribute them. `refs/REFERENCES.md` lists ev
 DOI and its open-access status, so anyone can obtain their own copy. Several are open access and free
 to download, including both of the papers this build rests on most heavily.
 
+**Project members** can get the PDFs from the shared Drive folder, which is restricted to GWU
+accounts: https://drive.google.com/drive/folders/1BS4GFaekAu13mgtEKKH5-q6HEAU1PLzF
+
 If you clone this and drop your own PDFs into `refs/`, `.gitignore` will keep them out of commits.
 
 ## Contributing

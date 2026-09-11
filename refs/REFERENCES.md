@@ -1,8 +1,15 @@
 # References
 
 PDFs are **not** committed to this repository. Most of these are under publisher copyright and
-redistributing them, even for coursework, is not something a public repo should do. Obtain each
-through your institutional library. Items marked **OA** are open access and free to download.
+redistributing them, even for coursework, is not something a public repo should do.
+
+**Project members:** the PDFs are in a shared Drive folder, access restricted to GWU accounts.
+
+> https://drive.google.com/drive/folders/1BS4GFaekAu13mgtEKKH5-q6HEAU1PLzF
+
+If that link does not open for you, ask the advisor for access rather than assuming the file is
+missing. Everyone else: obtain each item through your own institutional library. Items marked **OA**
+are open access and free to download from the publisher.
 
 Annotations for each item, including what it is actually useful for, are in `../INDEX.md`.
 
