@@ -1,0 +1,33 @@
+# Literature PDFs are NOT redistributable. Most items in refs/ are under publisher
+# copyright (Elsevier, IEEE, Springer, Thieme, Wiley). refs/REFERENCES.md lists DOIs
+# and open-access status so each collaborator can obtain their own copies.
+# Do not remove these rules without checking the licence of every file you are adding.
+refs/*.pdf
+refs/*.epub
+refs/*.djvu
+*.pdf
+!docs/figures/*.pdf
+
+# Raw measurement data and large binaries: keep out of git, use a data store
+*.wav
+*.mat
+*.npy
+*.h5
+*.hdf5
+*.tdms
+*.csv.gz
+
+# Scratch
+*.bak
+*.bak-*
+*.tmp
+~$*
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
