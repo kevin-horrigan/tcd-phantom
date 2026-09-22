@@ -43,7 +43,8 @@ assuming anything.
 
 | # | Citation | DOI / locator | Licence |
 |---|---|---|---|
-| 13 | Stergiopulos N, Westerhof BE, Westerhof N. Total arterial inertance as the fourth element of the windkessel model. *Am J Physiol Heart Circ Physiol* 1999;276(1):H81-H88. | 10.1152/ajpheart.1999.276.1.H81 | © APS |
+| 13 | Westerhof N, Lankhaar JW, Westerhof BE. The arterial Windkessel. *Med Biol Eng Comput* 2009;47:131-141. **Read this one first**: the accessible review of why compliance shapes an arterial waveform. | 10.1007/s11517-008-0359-2 *(verify)* | *verify* |
+| 13b | Stergiopulos N, Westerhof BE, Westerhof N. Total arterial inertance as the fourth element of the windkessel model. *Am J Physiol Heart Circ Physiol* 1999;276(1):H81-H88. Earlier, shares two authors with 13, and is the copy in the Drive folder. Adds inertance as a fourth element and gives healthy human values in Table 2. Read after 13, when you need numbers. | 10.1152/ajpheart.1999.276.1.H81 | © APS |
 | 14 | Shoemaker LN, Matern T, Kamar F, et al. Blood pressure in human large cerebral arteries: a feasibility study. *Am J Physiol Heart Circ Physiol* 2025. | *(verify)* | Creative Commons |
 | 15 | Permutt S, Riley RL. Hemodynamics of collapsible vessels with tone: the vascular waterfall. *J Appl Physiol* 1963;18:924-932. | 10.1152/jappl.1963.18.5.924 | © APS |
 

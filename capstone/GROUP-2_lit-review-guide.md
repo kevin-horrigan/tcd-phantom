@@ -53,6 +53,11 @@ Start with the first three. The rest fills in around them.
 
 ### Start here
 
+**A note on numbering.** The numbers in this list are local to this document and are *not* the same
+as the numbers in `refs/REFERENCES.md`. That file is the canonical list, it carries DOIs and
+open-access status, and it is the one to cite from. If a number here and a number there disagree,
+`REFERENCES.md` wins. Better still, refer to papers by author and year rather than by number.
+
 1. **Greaby R, Zderic V, Vaezy S.** Pulsatile flow phantom for ultrasound image-guided HIFU
    treatment of vascular injuries. *Ultrasound Med Biol* 2007;33(8):1269-1276.
    The closest precedent to your device, built in Dr. Zderic's prior group. Read it twice. Pay
@@ -96,9 +101,16 @@ Start with the first three. The rest fills in around them.
 ### Pump architecture and waveform shaping
 
 13. **Westerhof N, Lankhaar JW, Westerhof BE.** The arterial Windkessel. *Med Biol Eng Comput*
-    2009;47:131-141. *(Verify this citation before using it, I am recalling it rather than reading
-    it.)* The accessible canonical review of why compliance shapes an arterial waveform. Read this
-    before you design anything.
+    2009;47:131-141.
+    The accessible canonical review of why compliance shapes an arterial waveform. Read this before
+    you design anything. Verified 2026-09-22.
+
+13b. **Stergiopulos N, Westerhof BE, Westerhof N.** Total arterial inertance as the fourth element
+    of the windkessel model. *Am J Physiol Heart Circ Physiol* 1999;276(1):H81-H88.
+    A different, earlier paper sharing two authors with the one above, and the copy in the Drive
+    folder. Where the 2009 review explains the concept, this one adds inertance as a fourth element
+    and gives healthy human parameter values in its Table 2. Read 2009 first for understanding, then
+    this one when you need numbers. Both belong on your list.
 14. **ISO 5840**, cardiovascular implants, prosthetic heart valves. Contains the established bench
     practice for driving physiologic pulsatile flow. You do not need the whole standard, you need
     the test loop section.
