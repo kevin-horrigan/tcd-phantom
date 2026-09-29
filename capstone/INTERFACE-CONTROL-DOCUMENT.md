@@ -1,6 +1,6 @@
 # Interface Control Document
 
-**TCD phantom capstone** | Both groups | Draft 2026-09-29, unsigned
+**TCD phantom capstone** | Both groups | 2026-09-29
 
 Written in response to a direct question from Group 2 about who owns the vessel. If the two teams
 disagree about anything in this file, that disagreement is the problem, not a detail.
@@ -52,8 +52,8 @@ a **joint** deliverable and neither team may choose them alone.
 
 ## Jointly owned specifications
 
-Neither team changes any of these without the other agreeing in writing. Fill in the values and both
-teams sign.
+Neither team changes any of these without talking to the other first. Fill the values in together
+once you have agreed them, and keep the file updated as they settle.
 
 | # | Spec | Owner of the number | Value | Status |
 |---|---|---|---|---|
@@ -94,13 +94,8 @@ skull window material and thickness set, mold design, casting process, how the l
 mechanism, instrumentation, control electronics, tubing material and routing upstream of the
 fitting, the Phase 0 rig entirely.
 
-## Signature
+## Keeping it current
 
-This document is not in force until both teams have signed it. Print it, sign it, scan it, commit
-the scan.
-
-| Team | Name | Date |
-|---|---|---|
-| Group 1 | | |
-| Group 2 | | |
-| Advisor | | |
+This is a working file, not a contract. Update it as numbers settle and commit the change, so both
+teams and I are always looking at the same set. If something here turns out to be wrong, change it
+and say why.

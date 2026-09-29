@@ -47,12 +47,12 @@ tcd-phantom/
 | `GROUP-2_pulsatile-flow-loop.md` | Group 2 | Same shape, for the loop |
 | `GROUP-1_lit-review-guide.md` | Group 1 | Reading notes for the materials and acoustic path: what to read, what to pull out, what is easy to get wrong |
 | `GROUP-2_lit-review-guide.md` | Group 2 | Reading notes for flow loops and pump architecture |
-| `INTERFACE-CONTROL-DOCUMENT.md` | Both | Ownership boundary, jointly owned specs, signature block |
+| `INTERFACE-CONTROL-DOCUMENT.md` | Both | Ownership boundary and the specs neither team sets alone |
 | `GROUP-2_phase0-bench-rig.md` | Group 2 | ~$100 rig built during the lit review, to derive requirements from their own bench |
 
 Shared interface items and the December gate are mirrored verbatim in both group briefs, so neither
-team can be told something different. Not yet written: the standalone interface control document both
-teams sign.
+team can be told something different. The standalone interface document now exists and carries the
+ownership boundary plus the specs neither team sets alone.
 
 ---
 

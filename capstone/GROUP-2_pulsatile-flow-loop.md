@@ -135,7 +135,7 @@ pump as the second-semester upgrade. December then has a working loop regardless
 
 ## Interface items owned jointly with Group 1
 
-Freeze these in a signed interface document in month one.
+Agree these with Group 1 early and record them in `INTERFACE-CONTROL-DOCUMENT.md`.
 
 - **Lumen diameter.** Sets your required flow. At 3 mm, roughly 250 mL/min gives 60 cm/s mean and
   roughly 500 mL/min gives 120 cm/s peak. Do this arithmetic before speccing a pump. A pump sized
@@ -150,4 +150,4 @@ Freeze these in a signed interface document in month one.
 ## December gate
 
 Loop produces a stable instrumented pulse at target rate through a rigid dummy channel of the agreed
-lumen diameter, before the real phantom exists. Interface document signed.
+lumen diameter, before the real phantom exists. Interface items agreed with Group 1.

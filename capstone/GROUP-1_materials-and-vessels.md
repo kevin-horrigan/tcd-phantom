@@ -102,7 +102,7 @@ the intended angle in the design document and confirm it in test.
 
 ## Interface items owned jointly with Group 2
 
-Freeze these in a signed interface document in month one.
+Agree these with Group 2 early and record them in `INTERFACE-CONTROL-DOCUMENT.md`.
 
 - **Lumen diameter.** Sets Group 2's required flow. At 3 mm, roughly 250 mL/min gives 60 cm/s mean
   and roughly 500 mL/min gives 120 cm/s peak. Nobody buys a pump before this is frozen.
@@ -116,4 +116,4 @@ Freeze these in a signed interface document in month one.
 
 ## December gate
 
-Rig reproduces water. Wall-less burst pressure result exists. Interface document signed.
+Rig reproduces water. Wall-less burst pressure result exists. Interface items agreed with Group 2.
