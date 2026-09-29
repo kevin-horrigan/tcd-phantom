@@ -98,12 +98,13 @@ open-access status, and it is the one to cite from. If a number here and a numbe
 9. **Ho CK, Chee AJY, Yiu BYS, et al.** Wall-less flow phantoms with tortuous vascular geometries.
    *IEEE Trans Ultrason Ferroelectr Freq Control* 2017;64:25-38.
 
-9b. **Rominger MB, et al.** Easy pulsatile phantom for teaching and validation of flow measurements
-    in ultrasound. Thieme, doi:10.1055/s-0042-106396.
-    Added late, lettered so the numbering you already used does not shift. You have clearly read this
-    one, but it was only ever in `refs/REFERENCES.md` and never here, which is part of how it ended
-    up labeled against a different paper. Note that its constant-flow pump defines mean flow
-    structurally, a different answer to the ground-truth problem than measuring it afterward.
+19. **Rominger MB, Müller-Stuler E-M, Pinto M, Becker AS, Martini K, Frauenfelder T,
+    Klingmüller V (2016).** Easy pulsatile phantom for teaching and validation of flow
+    measurements in ultrasound. *Ultrasound International Open* 2:E93-E97.
+    doi:10.1055/s-0042-106396.
+    Numbered 19 to match the number you already assigned it. Listed here out of sequence so
+    nothing else shifts. Its constant-flow pump defines mean flow structurally, which is a
+    different answer to the ground-truth problem than measuring it afterward.
 
 ### Blood-mimicking fluid
 
@@ -155,7 +156,7 @@ open-access status, and it is the one to cite from. If a number here and a numbe
 
 Items 4 through 12 and 18 were transcribed from the reference lists of the Greaby and Soloukey
 papers, and I have since re-checked them against those PDFs. Items 11 and 13 were written from
-memory and have now been verified against the publishers. Items 1, 3, 9b, 13b and 16 I have read
+memory and have now been verified against the publishers. Items 1, 3, 13b, 16 and 19 I have read
 directly.
 
 Verify every citation against the actual article before it goes into your written review, and do not
