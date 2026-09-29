@@ -1,182 +1,194 @@
-# Group 1: Literature Review Guide
+# Group 1: Reading Notes for the Literature Review
 
-**TCD phantom capstone, materials and vessels group** | Advisor: K. Horrigan | Draft 2026-09-29
+**TCD phantom capstone, materials and vessels group** | K. Horrigan | 2026-09-29
 
-Counterpart to `GROUP-2_lit-review-guide.md`. Same format and same deliverable shape, so the two
-reviews can sit side by side. The subject matter is different: Group 2 is reviewing flow loops, you
-are reviewing **materials and the acoustic path**.
+Your course sets the requirements for this assignment, not me. What follows is what I can usefully
+add: which papers are worth your time, what to pull out of them, and the handful of things that are
+easy to get wrong in this particular corner of the literature. Take what helps and ignore the rest.
 
-## What this review is for
+Group 2 has a companion set of notes. They are reading flow loops and pumps. You are reading
+materials and the acoustic path.
 
-Not a book report. The purpose is a **map of the materials design space**, so that when you propose
-a formulation you can say what has been tried, what it measured, and why yours is different.
+## A suggestion that will save you time
 
-A good outcome is a comparison table plus about five pages of argument. A bad outcome is twenty
-paragraphs each summarizing one paper.
+Before writing anything, put the papers in a table, one row per material or phantom. Everyone who
+has done this tells me the same thing afterward: the prose gets much easier once the table exists,
+because the comparisons write themselves.
 
-**A note on numbering.** Cite by author and year, never by list number. Numbers are local to whatever
-document you are reading and they drift. `refs/REFERENCES.md` is the canonical list and carries DOIs.
-Ask Group 2 how much trouble numbering caused them.
+Columns worth having:
 
-## Questions you must be able to answer
-
-Write these down and answer them explicitly. If a question cannot be answered from the literature,
-say so, because that is a finding.
-
-**On the target: what has to be matched**
-
-1. What are the acoustic properties of the three tissues in the transcranial path, scalp, skull and
-   brain? For each: speed of sound, attenuation coefficient, density. Give ranges, not single
-   numbers, and say which source each came from.
-2. Why do published values for skull disagree so much more than values for soft tissue? The answer
-   involves what bone actually is.
-3. What does the temporal acoustic window look like anatomically? Thickness, how much it varies
-   between people, and what fraction of the population has an inadequate one.
-4. How much signal is lost passing through the temporal bone at around 2 MHz, and what else happens
-   to the beam besides attenuation?
-
-**On existing materials**
-
-5. What tissue-mimicking material families exist for ultrasound, and what are their measured
-   properties? Gels, oil-based gels, cryogels, silicones, others.
-6. For each family, what composition variable tunes sound speed, and over what range?
-7. What has been used as a skull analog, and how well does any of it actually match bone?
-8. How are wall-less vessels made, what is the smallest lumen anyone has achieved, and what pressure
-   have they been shown to hold?
-
-**On measurement**
-
-9. How is speed of sound measured in a sample? How is attenuation measured? What are the dominant
-   error sources in each?
-10. How do published studies verify that their material is what they claim? What is the independent
-    reference in each case, and how many do not really have one?
-
-**On the gap**
-
-11. Has anyone built and acoustically characterized a tissue-mimicking head phantom **at TCD
-    frequencies through a skull analog**? If not, what is different about that case?
-
-Question 11 defines your project the way question 10 defines Group 2's. Spend real effort on it.
-
-## Reading list
-
-Items marked **[Drive]** are in the shared folder. The rest you find yourself, which is part of the
-exercise.
-
-### Start here
-
-1. **Soloukey et al. (2024)**, *Ultrasound Med Biol* 50:860. **[Drive]**
-   The wall-less casting process and a full tissue-mimicking recipe. Read it twice. Note what they
-   measured their material's sound speed to be, and think about what that means for a device that
-   reports velocity in absolute units.
-2. **Qian et al. (2014)**, *IEEE Trans Biomed Eng* 61(9):2444. **[Drive]**
-   PVA cryogel, with sound speed, attenuation and stiffness all measured across freeze-thaw cycles.
-   The direct competitor to the Soloukey formulation. Compare them carefully.
-3. **Roldan & Kyriacou (2023)**, *Photonics* 10:504. **[Drive]**
-   Skull plus brain plus circulation plus controllable intracranial pressure. The closest published
-   object to the whole phantom. It is optical rather than acoustic, so ask yourself which parts of
-   it transfer and which do not.
-
-### Tissue-mimicking materials
-
-4. **Duck FA.** *Physical Properties of Tissue: A Comprehensive Reference Book.* The standard
-   compendium for the target values in question 1. Find it through the library.
-5. **Cabrelli et al.**, the SEBS and glycerol-in-oil gel papers. These are the compositional basis
-   for the Soloukey recipe and are listed in that paper's reference list. Chase them from there.
-   They are where the answer to question 6 lives for that material family.
-6. **Greaby, Zderic & Vaezy (2007)**, *Ultrasound Med Biol* 33(8):1269. **[Drive]**
-   Group 2's primary paper, and you should read it too, but read it for the material rather than the
-   pump. They used agarose and say plainly in their discussion why it was the wrong choice
-   acoustically. That admission is one of the most useful sentences in your reading list.
-
-### Skull analogs
-
-7. **Transcranial HIFU phantom literature.** Search terms: "3D printed skull phantom", "skull
-   mimicking material ultrasound", "transcranial HIFU phantom". This community has spent years on
-   exactly the problem in question 7, and has published what does and does not work. Find three or
-   four representative papers rather than reading exhaustively. This is the least mapped part of
-   your list and potentially the most valuable.
-8. **Roldan & Kyriacou (2023)** again, for how they justified their printed calvaria. Look closely
-   at what property they matched it on. It is not the one you need.
-
-### Wall-less vessel construction
-
-9. **Rickey, Picot, Christopher & Fenster (1995)**, *Ultrasound Med Biol* 21:1163. The original
-   wall-less vessel phantom.
-10. **Ho, Chee, Yiu et al. (2017)**, *IEEE Trans Ultrason Ferroelectr Freq Control* 64:25. Wall-less
-    phantoms with tortuous geometry, design principles.
-11. **Nikitichev et al. (2016)**, *J Ultrasound Med* 35:1333. 3D printed phantoms with wall-less
-    vessels.
-
-### Measurement method
-
-12. **IEC 61685**, ultrasonics flow test object. Check library access before assuming you can read
-    it.
-13. Find a primary source on the **through-transmission substitution method** for measuring sound
-    speed and attenuation. This is the method you will use, and you should cite where it comes from
-    rather than learning it from a lab manual.
-
-### Geometry you have to reproduce
-
-14. **Leotta et al. (2024)**, *J Clin Monit Comput*. **[Drive]** Doppler insonation angles and depths
-    for the basal cerebral arteries, measured from CT angiography. This gives you the depth and
-    angle your vessel has to sit at, from real anatomy rather than a guess.
-15. **Aaslid, Markwalder & Nornes (1982)**, *J Neurosurg* 57:769. **[Drive]** The origin of TCD.
-    Read it for what the measurement is and where the window is.
-
-### Shared with Group 2
-
-16. **Ramnarine et al. (1998)**, *Ultrasound Med Biol* 24:451. Blood-mimicking fluid. Coordinate with
-    Group 2 rather than both reviewing it.
-
-## The deliverable: build a comparison table
-
-One row per material or phantom, with at least these columns:
-
-| Column | Why |
+| Column | Why it earns its place |
 |---|---|
 | Reference | Author and year |
 | Material family | Gel, oil gel, cryogel, silicone, printed polymer |
-| Composition | Actual proportions if given |
-| Speed of sound | With units, and say whether measured or quoted |
-| Attenuation | **With the frequency it was measured at.** Useless without it |
-| Density | Needed for impedance |
-| What tunes it | Which variable moves sound speed, and over what range |
-| Stability | Shelf life, storage conditions, any reported degradation |
-| Vessel method | Wall-less, tube, excised, printed, or not applicable |
-| Measurement method | How they determined the acoustic properties |
-| Independent validation | Did they check against anything, or just report? |
-| Stated limitations | The authors' own, from the discussion section |
+| Composition | Actual proportions where given |
+| Speed of sound | With units, and note whether they measured it or quoted someone else |
+| Attenuation | **With the frequency it was measured at.** See below |
+| Density | You need it for impedance |
+| What tunes it | Which variable moves the properties, and over what range |
+| Stability | Shelf life, storage, any reported degradation |
+| Vessel method | Wall-less, tube, excised, printed, not applicable |
+| How measured | The method they used to get the acoustic numbers |
+| Independent check | Did they verify against anything, or only report? |
+| Stated limitations | The authors' own words, from the discussion |
 
-Two columns will teach you the most. **What tunes it** is the answer to your design problem. **Stated
-limitations** is where authors admit what their material cannot do, and the Greaby agarose sentence
-is the model for what to look for.
+Two of those columns tend to be the most useful. **What tunes it** is effectively the answer to your
+design problem. **Stated limitations** is where authors admit what their material cannot do, and it
+is usually the most honest paragraph in any paper.
 
-Fill the table first, write the prose second.
+Group 2 built theirs in a spreadsheet and it worked well. Ask them for the file if it helps.
 
-## What to write
+## Things worth being able to answer
 
-About five pages plus the table as an appendix.
+Not a checklist to submit. These are the questions I think the review is really about, and the ones
+I would most enjoy talking through with you.
 
-1. The target, from questions 1 to 4. What are we trying to match, and how well is it even known?
-2. The materials design space, from your table. What exists, what does each buy and cost?
-3. The skull problem, from question 7. Treat this separately because it is the hardest part.
-4. The gap, from question 11.
-5. Implications for our design. Candidate formulations, what is ruled out, what stays open. This
-   becomes your specification.
-6. What you could not determine from the literature, and how you propose to measure it.
+**What are we trying to match?**
 
-Section 6 is not a weakness. It tells me what to put on the bench.
+- What are the acoustic properties of the three tissues in the path, scalp, skull and brain? Speed
+  of sound, attenuation, density. Ranges rather than single numbers, with sources.
+- Why do published skull values scatter so much more than soft tissue values? The answer is about
+  what bone actually is, and it is worth understanding rather than just noting.
+- What does the temporal window look like anatomically, how much does it vary between people, and
+  what fraction of the population has an inadequate one? That last number is more interesting than
+  it sounds.
+- How much signal is lost through the temporal bone around 2 MHz, and what happens to the beam
+  besides attenuation?
 
-## Coordinate with Group 2
+**What has been tried?**
 
-Two things are jointly owned and you should not decide them alone. The vessel diameter sets their
-pump requirement, and your maximum survivable pressure bounds what they can drive. Both are in
-`capstone/INTERFACE-CONTROL-DOCUMENT.md`, which both teams need to fill in and sign.
+- Which tissue-mimicking material families exist, and what did they measure?
+- For each family, what composition variable moves the speed of sound, and how far?
+- What has been used as a skull analog, and how well does any of it really match bone?
+- How are wall-less vessels made? What is the smallest lumen anyone has managed, and what pressure
+  has one been shown to hold?
 
-Read that document before you finish this review. It will change what you conclude in section 5.
+**How do you know a material is what you say it is?**
 
-## Timeline
+- How is speed of sound measured? How is attenuation measured? Where does the error come from?
+- How do published studies verify their material? You may notice that a fair number do not really
+  verify it at all, which is worth saying out loud.
 
-Two to three weeks. Send me the table as soon as it is filled, even if the prose is not written. The
-table is what we will talk about.
+**What has nobody done?**
+
+- Has anyone built and acoustically characterized a tissue-mimicking head phantom at TCD frequencies
+  through a skull analog?
+
+That last one is the question your project exists to answer, so it is worth more than a sentence.
+
+## Where to start
+
+Items marked **[Drive]** should be in the shared folder. If one is missing, tell me rather than
+assuming you lost it.
+
+**The three to read first**
+
+- **Soloukey et al. (2024)**, *Ultrasound Med Biol* 50:860. **[Drive]** The wall-less casting process
+  and a complete material recipe. Worth reading twice. Note what they measured their material's
+  speed of sound to be, and think about what that implies for a device reporting velocity in
+  absolute units.
+- **Qian et al. (2014)**, *IEEE Trans Biomed Eng* 61(9):2444. **[Drive]** PVA cryogel, with speed of
+  sound, attenuation and stiffness all measured across freeze-thaw cycles. The direct competitor to
+  the Soloukey formulation, and the comparison between the two is most of your section 2.
+- **Roldan & Kyriacou (2023)**, *Photonics* 10:504. **[Drive]** Skull, brain, circulation and
+  controllable intracranial pressure. The closest published thing to the whole phantom. It is
+  optical rather than acoustic, so the interesting question is which parts transfer.
+
+**Materials**
+
+- **Duck FA (1990).** *Physical Properties of Tissue: A Comprehensive Reference Book.* Academic
+  Press. The standard compendium, 138 tables covering acoustic, thermal, mechanical and other
+  properties for soft tissue and bone. This is where the target numbers come from. Long out of
+  print, though IPEM reissued it print-on-demand (ISBN 1903613507), and the library may have the
+  original. Archive.org has a lending copy.
+- **Cabrelli et al.**, the SEBS and glycerol-in-oil gel papers, three of them, all listed in
+  Soloukey's reference list. These are the compositional basis for that recipe and are where the
+  tuning answer lives for that material family.
+- **Greaby, Zderic & Vaezy (2007)**, *Ultrasound Med Biol* 33(8):1269. **[Drive]** Group 2's main
+  paper, but read it for the material rather than the pump. They used agarose and say plainly in the
+  discussion why it was the wrong acoustic choice. That admission is one of the more useful
+  sentences you will read.
+
+**Skull analogs**
+
+This is the least mapped part of your reading and probably where you can add the most. Search the
+transcranial HIFU phantom literature: try "3D printed skull phantom", "skull mimicking material
+ultrasound", "transcranial HIFU phantom". That community has worked on exactly this problem for
+years. Three or four representative papers is plenty.
+
+Also look again at how Roldan justified their printed calvaria, and notice which property they
+matched it on. It is not the one you need.
+
+**Wall-less vessels**
+
+- **Rickey, Picot, Christopher & Fenster (1995)**, *Ultrasound Med Biol* 21:1163. The original
+  wall-less vessel phantom.
+- **Ho, Chee, Yiu, Tsang, Chow & Yu (2017)**, *IEEE Trans Ultrason Ferroelectr Freq Control*
+  64:25-38. Wall-less phantoms with tortuous geometry, design principles.
+- **Nikitichev, Barburas, McPherson, Mari, West & Desjardins (2016)**, *J Ultrasound Med*
+  35:1333-1339. 3D printed phantoms with wall-less vessels.
+
+**Method and standards**
+
+- **IEC 61685:2001**, *Ultrasonics: Flow measurement systems, flow test object.* 36 pages. Worth
+  knowing about, and worth knowing its limits: it specifies a test object carrying **steady** flow,
+  so it does not directly govern a pulsatile phantom. Useful for the tissue-mimicking material and
+  blood-mimicking fluid specifications, not for waveform. Check library access before assuming you
+  can read it.
+- A primary source on the **through-transmission substitution method**, since that is likely the
+  technique you will use for sound speed and attenuation. Worth citing where it comes from rather
+  than picking it up from a lab handout.
+
+**Geometry you have to reproduce**
+
+- **Leotta et al. (2024)**, *J Clin Monit Comput*. **[Drive]** Doppler angles and depths for the
+  basal cerebral arteries, measured from CT angiography. Real anatomy instead of a guess.
+- **Aaslid, Markwalder & Nornes (1982)**, *J Neurosurg* 57:769. **[Drive]** The origin of TCD. Read
+  it for what the measurement is and where the window sits.
+
+**Shared with Group 2**
+
+- **Ramnarine et al. (1998)**, *Ultrasound Med Biol* 24:451. Blood-mimicking fluid. Coordinate
+  rather than both doing it.
+
+## Three things that are easy to get wrong
+
+**Always record attenuation with its frequency.** An attenuation number alone is not usable, and we
+care about roughly 2 MHz, which is lower than most convenient lab equipment runs at. If a paper
+reports at 5 or 10 MHz, note it, because it does not transfer directly.
+
+**Cite by author and year, not by list number.** Two documents in the repo had independently
+numbered reference lists that drifted apart, which was my fault, and Group 2 ended up entering the
+same paper twice under two different numbers before anyone noticed. Author and year travel between
+documents; numbers do not.
+
+**No printable homogeneous material matches real bone well.** If you conclude that, you are probably
+right, and it is a finding rather than a failure. Say it clearly and show the numbers.
+
+## How this might map onto your write-up
+
+Your course may want a different structure, in which case follow theirs. But the material tends to
+fall out in roughly this order:
+
+1. What we are trying to match, and how well it is even known
+2. The materials design space, straight from your table
+3. The skull problem, separately, because it is the hardest part
+4. What nobody has done
+5. What this implies for our design: candidates, what is ruled out, what stays open
+6. What the literature could not tell you
+
+Section 6 is not a weakness. It is the most useful section for me, because it tells me what we need
+to measure on the bench.
+
+## One coordination item
+
+`capstone/INTERFACE-CONTROL-DOCUMENT.md` settles who owns what between the two groups. Short version:
+your group owns the vessel, and Group 2's tubing stops at a fitting on the outside of your block.
+There was real confusion about that, traceable to something ambiguous I wrote.
+
+Worth reading before you finish section 5, because it affects what you can conclude there.
+
+## Timing
+
+Whatever your course deadline is. If you want feedback before then, send me the table as soon as it
+is filled, even with no prose written. The table is the part I can be most useful about.
