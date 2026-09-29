@@ -46,7 +46,7 @@ tcd-phantom/
 | `GROUP-1_materials-and-vessels.md` | Group 1 | Deliverables, method notes, acceptance criteria, risks, interface items |
 | `GROUP-2_pulsatile-flow-loop.md` | Group 2 | Same shape, for the loop |
 | `GROUP-1_lit-review-guide.md` | Group 1 | Reading notes for the materials and acoustic path: what to read, what to pull out, what is easy to get wrong |
-| `GROUP-2_lit-review-guide.md` | Group 2 | Same, for flow loops and pump architecture |
+| `GROUP-2_lit-review-guide.md` | Group 2 | Reading notes for flow loops and pump architecture |
 | `INTERFACE-CONTROL-DOCUMENT.md` | Both | Ownership boundary, jointly owned specs, signature block |
 | `GROUP-2_phase0-bench-rig.md` | Group 2 | ~$100 rig built during the lit review, to derive requirements from their own bench |
 
