@@ -324,26 +324,54 @@ def run(hr=60.0, beats=10):
         print("no slice hit the rate ceiling, so the profile was played whole")
 
 
-def selftest(dist=2.0):
-    """Two millimetres, slowly, to prove direction and wiring before anything
-    is connected to a syringe. Watch the carriage, not the screen."""
+def selftest(dist=None, rpm=30.0):
+    """One screw revolution out and back, slowly, with nothing in the way.
+
+    The distance defaults to SCREW_LEAD on purpose, so the command is worth
+    exactly one turn of the shaft. That makes this a TEST rather than a
+    demonstration: put a mark on the coupler or the shaft, run it, and the
+    mark has to come back to where it started. "It moved" proves the wiring.
+    "It moved exactly one revolution and returned" proves STEPS_PER_REV,
+    MICROSTEP, the PIO period arithmetic and STEPS_PER_MM all at once, which
+    is the whole chain between a millilitre in the model and a millilitre in
+    the barrel.
+
+    If the mark lands short or long by a consistent fraction, suspect the
+    microstep setting before anything else: MS1/MS2 both grounded is 8 on a
+    TMC2209 and 16 on a TMC2208, and getting that wrong scales every volume
+    this machine will ever deliver by exactly two.
+
+    Safe on a bare motor with no mechanism attached, which is what it is for.
+    """
+    dist = C.SCREW_LEAD if dist is None else dist
+    steps = int(round(dist * C.STEPS_PER_MM))
     print("config: %d steps/mm, %.3f uL/step, beat %.3f mm = %d steps"
           % (C.STEPS_PER_MM, C.UL_PER_STEP, C.BEAT_MM,
              round(C.BEAT_MM * C.STEPS_PER_MM)))
     print("pins STEP=%d DIR=%d EN=%d, DIR_ADVANCE=%d"
           % (C.STEP_PIN, C.DIR_PIN, C.EN_PIN, C.DIR_ADVANCE))
     print("")
-    print("moving %+.1f mm, which should run the carriage TOWARD the syringe" % dist)
+    print("commanding %+.2f mm = %d microsteps = %.2f shaft revolutions"
+          % (dist, steps, steps / float(C.STEPS_PER_REV)))
+    print("at %.0f rpm, so about %.1f s each way. Mark the shaft first."
+          % (rpm, abs(steps) / (rpm / 60.0 * C.STEPS_PER_REV)))
     enable(True)
-    _burst(int(dist * C.STEPS_PER_MM), 30.0 / 60.0 * C.STEPS_PER_REV)
+    _burst(steps, rpm / 60.0 * C.STEPS_PER_REV)
     _wait_idle()
-    time.sleep_ms(400)
+    time.sleep_ms(600)
     print("and back")
-    _burst(-int(dist * C.STEPS_PER_MM), 30.0 / 60.0 * C.STEPS_PER_REV)
+    _burst(-steps, rpm / 60.0 * C.STEPS_PER_REV)
     _wait_idle()
     off()
     print("")
-    print("If it ran AWAY from the syringe, set DIR_ADVANCE = 0 in config.py")
-    print("on the laptop, re-run gen_pico_config.py, and re-upload.")
-    print("If it buzzed and did not turn, the coil pairs are swapped: a")
-    print("stepper's two coils must be A1/A2 and B1/B2, never A1/B1.")
+    print("Did the mark return to where it started?")
+    print("  yes, exactly      -> the whole step chain is right")
+    print("  short or long     -> microstep setting. MS1/MS2 to GND is 8 on a")
+    print("                       TMC2209 and 16 on a TMC2208. Wrong by 2x")
+    print("                       scales every volume this rig delivers.")
+    print("  turned the wrong way first -> set DIR_ADVANCE = %d in config.py"
+          % (0 if C.DIR_ADVANCE else 1))
+    print("                       on the laptop, regenerate, re-upload.")
+    print("  buzzed, did not turn -> coil pairs are split. A stepper's two")
+    print("                       coils go A1/A2 and B1/B2, never A1/B1.")
+    print("  stuttered or skipped -> VREF too low, or rpm too high for it.")
