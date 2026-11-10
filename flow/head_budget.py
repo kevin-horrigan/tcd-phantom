@@ -92,7 +92,12 @@ PSI = 6894.757           # Pa per psi
 
 # A ball resting on a seat, for the case where the catalog part cannot be
 # bought. Densities in kg/m3 for balls sold by the bag.
-BALL_D, SEAT_D = 6.35, 3.00      # mm
+# The seat is the O-ring the ball lands on, not a bare printed hole. These
+# started out as 6.35 on a 3.00 mm seat, which is a bad pairing: cracking
+# pressure is ball weight over SEAT area, so a small seat raises it, and a
+# small seat also throttles the flow. Opening it to an AS568-009 at 5.28 mm
+# improves both terms at once. ball_check.py draws the part.
+BALL_D, SEAT_D = 6.35, 5.28      # mm
 BALLS = [
     ("nylon", 1140.0), ("acetal / Delrin", 1410.0), ("PTFE", 2160.0),
     ("soda-lime glass", 2500.0), ("316 stainless", 7980.0),
