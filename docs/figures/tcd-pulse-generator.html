@@ -1,0 +1,363 @@
+<title>Side-Branch Pulse Generator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Serif:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a build sheet. Where the pulser sits, why R1 exists, which knob does what. */
+  :root {
+    --bg:#f3f6f8; --panel:#ffffff; --fg:#11161d; --muted:#55606e; --rule:#c6cfd9;
+    --fluid:#0d6b88; --fluid-soft:#d6eaf1; --sig:#8a5a00; --sig-soft:#f7edd8;
+    --bad:#9b2f26; --bad-soft:#f6ddd9;
+    --f-cond:"IBM Plex Sans Condensed","Helvetica Neue",Arial,sans-serif;
+    --f-body:"IBM Plex Serif",Georgia,serif;
+    --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#0d1218; --panel:#161d26; --fg:#e7edf4; --muted:#97a4b3; --rule:#2b3643;
+    --fluid:#4ec4de; --fluid-soft:#10303b; --sig:#efb42c; --sig-soft:#2d2410;
+    --bad:#ef6a5f; --bad-soft:#3a1d19; color-scheme:dark; } }
+  :root[data-theme="dark"] {
+    --bg:#0d1218; --panel:#161d26; --fg:#e7edf4; --muted:#97a4b3; --rule:#2b3643;
+    --fluid:#4ec4de; --fluid-soft:#10303b; --sig:#efb42c; --sig-soft:#2d2410;
+    --bad:#ef6a5f; --bad-soft:#3a1d19; color-scheme:dark; }
+
+  body { margin:0; background:var(--bg); color:var(--fg); font-family:var(--f-body); font-size:16px; line-height:1.6; }
+  .sheet { max-width:1040px; margin:0 auto;
+    padding-left:max(16px, env(safe-area-inset-left,0px));
+    padding-right:max(16px, env(safe-area-inset-right,0px));
+    padding-block:40px 72px; }
+  header { border-bottom:2px solid var(--fg); padding-bottom:18px; }
+  .eyebrow { font-family:var(--f-cond); font-weight:600; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+  h1 { font-family:var(--f-cond); font-weight:600; font-size:clamp(30px,6vw,46px); line-height:1.04; margin:8px 0 10px; text-wrap:balance; letter-spacing:-.01em; }
+  header p { margin:0; max-width:64ch; color:var(--muted); }
+  h2 { font-family:var(--f-cond); font-weight:600; font-size:clamp(21px,3.4vw,27px); margin:56px 0 4px; text-wrap:balance; }
+  .sub { font-family:var(--f-cond); color:var(--muted); font-size:14px; margin:0 0 22px; }
+  figure { margin:0; }
+  .scroller { overflow-x:auto; border:1px solid var(--rule); border-radius:3px; background:var(--panel); }
+  .scroller svg { display:block; width:100%; min-width:860px; height:auto; }
+  figcaption { font-family:var(--f-cond); font-size:13.5px; color:var(--muted); margin-top:10px; max-width:78ch; }
+  .hint { display:none; font-family:var(--f-cond); font-size:12px; color:var(--muted); margin-top:8px; }
+  @media (max-width:880px){ .hint{display:block;} }
+
+  .fl{stroke:var(--fluid);stroke-width:3.4;fill:none;stroke-linecap:round}
+  .flfat{stroke:var(--fluid);stroke-width:7;fill:none;stroke-linecap:round}
+  .flthin{stroke:var(--fluid);stroke-width:1.6;fill:none}
+  .flfill{fill:var(--fluid-soft);stroke:var(--fluid);stroke-width:1.5}
+  .trace{stroke:var(--fluid);stroke-width:2.6;fill:none;stroke-linejoin:round}
+  .box{fill:var(--panel);stroke:currentColor;stroke-width:1.6}
+  .boxq{fill:none;stroke:currentColor;stroke-width:1.4}
+  .metal{fill:var(--sig-soft);stroke:var(--sig);stroke-width:1.6}
+  .dim{stroke:var(--sig);stroke-width:1.2;fill:none}
+  .hair{stroke:var(--rule);stroke-width:1;fill:none}
+  .dash{stroke:var(--rule);stroke-width:1.2;fill:none;stroke-dasharray:5 4}
+  .lead{stroke:var(--muted);stroke-width:1;fill:none}
+  .bad{stroke:var(--bad);stroke-width:7;fill:none;stroke-linecap:round}
+  .mkfl{fill:var(--fluid)} .mkfg{fill:currentColor} .mksig{fill:var(--sig)} .mkbad{fill:var(--bad)}
+  text{font-family:var(--f-cond);font-weight:500}
+  .t{font-size:13px;fill:currentColor} .tb{font-size:13px;font-weight:600;fill:currentColor}
+  .ts{font-size:11px;fill:var(--muted)} .tf{font-size:11.5px;fill:var(--fluid)}
+  .ta{font-size:11.5px;fill:var(--sig)} .tbad{font-size:11.5px;font-weight:600;fill:var(--bad)}
+  .tm{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+  .tmb{font-family:var(--f-mono);font-size:12px;font-weight:500;fill:currentColor}
+
+  .notes{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:3px}
+  .notes li{background:var(--panel);padding:15px 18px;min-width:0}
+  .notes b{font-family:var(--f-cond);font-weight:600;display:block;font-size:14px}
+  .notes span{color:var(--muted);font-size:14.5px}
+  .tablewrap{overflow-x:auto;margin-top:26px;border:1px solid var(--rule);border-radius:3px}
+  table{border-collapse:collapse;width:100%;font-size:14.5px}
+  th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--rule)}
+  th{font-family:var(--f-cond);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--panel)}
+  td{background:var(--panel);color:var(--fg)}
+  tr:last-child td{border-bottom:none}
+  td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--rule);font-family:var(--f-cond);font-size:13px;color:var(--muted)}
+</style>
+
+<div class="sheet">
+<header>
+  <div class="eyebrow">GW BME capstone &middot; TCD phantom &middot; Group 2</div>
+  <h1>Side-Branch Pulse Generator</h1>
+  <p>With a constant-head jar supplying steady flow, the pulse gets added downstream by a piston
+  that shuttles about half a millilitre per beat. It never carries the flow, only the variation,
+  which is why it is so small.</p>
+</header>
+
+<h2>1 &nbsp;Where it sits</h2>
+<p class="sub">The pump lifts fluid to the jar and does nothing else. Everything that shapes the waveform is downstream of it.</p>
+
+<figure>
+<div class="scroller">
+<svg viewBox="0 0 980 520" role="img" aria-label="Loop layout: a constant-head jar feeds through a fixed resistance R1 to a tee carrying a piston pulser, then a plenum, a taper, the phantom vessel, and an adjustable resistance R2 back to a low reservoir, with the OMEGAFLEX pump lifting fluid back to the jar.">
+ <defs>
+  <marker id="aF" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="0,1 10,5 0,9" class="mkfl"/></marker>
+  <marker id="aS" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><polygon points="0,1.5 10,5 0,8.5" class="mksig"/></marker>
+ </defs>
+
+ <!-- jar -->
+ <rect x="26" y="54" width="150" height="104" rx="2" class="box"/>
+ <rect x="26" y="92" width="150" height="66" class="flfill"/>
+ <text x="101" y="46" class="tb" text-anchor="middle">constant-head jar</text>
+ <rect x="94" y="92" width="13" height="66" class="box"/>
+ <path d="M100 158 V206" class="fl" marker-end="url(#aF)"/>
+ <text x="118" y="188" class="ta">overflow standpipe</text>
+ <text x="118" y="203" class="ts">its rim pins the level, and</text>
+ <text x="118" y="218" class="ts">excess spills to the reservoir</text>
+ <path d="M150 158 V300" class="fl"/>
+ <path d="M20 158 V300" class="dim"/>
+ <text x="26" y="236" class="tm">1.2 m</text>
+
+ <!-- main line -->
+ <path d="M150 300 H200" class="fl"/>
+
+ <!-- R1 -->
+ <rect x="200" y="266" width="86" height="68" rx="2" class="box"/>
+ <path d="M214 288 h58 M214 312 h58" class="boxq"/>
+ <text x="243" y="352" class="tb" text-anchor="middle">R1, fixed</text>
+ <text x="243" y="367" class="ts" text-anchor="middle">a measured length of narrow</text>
+ <text x="243" y="382" class="ts" text-anchor="middle">tubing, not a valve</text>
+
+ <path d="M286 300 H356" class="fl"/>
+
+ <!-- piston assembly -->
+ <circle cx="384" cy="74" r="30" class="metal"/>
+ <circle cx="384" cy="74" r="4" class="mkfg"/>
+ <circle cx="384" cy="55" r="5" class="mkfg"/>
+ <path d="M384 59 L384 150" class="metal" stroke-width="5"/>
+ <rect x="362" y="150" width="44" height="96" rx="2" class="box"/>
+ <rect x="366" y="196" width="36" height="46" class="flfill"/>
+ <rect x="366" y="186" width="36" height="12" class="metal"/>
+ <path d="M384 246 V300" class="fl"/>
+ <circle cx="384" cy="300" r="6" class="mkfl"/>
+ <text x="424" y="60" class="tb">servo or stepper</text>
+ <text x="424" y="76" class="ts">speed = heart rate</text>
+ <text x="424" y="96" class="ta">crank throw 4.3 mm</text>
+ <text x="424" y="111" class="ts">= 8.7 mm stroke</text>
+ <text x="424" y="176" class="tb">3 mL syringe</text>
+ <text x="424" y="192" class="tmb">0.51 mL per beat</text>
+ <text x="424" y="208" class="ts">11% of stroke volume</text>
+ <circle cx="384" cy="300" r="9" fill="none" stroke="var(--sig)" stroke-width="2.2"/>
+ <text x="384" y="332" class="ta" text-anchor="middle">P1, piston output</text>
+ <circle cx="570" cy="300" r="7" fill="var(--sig)"/>
+ <path d="M570 292 V232" class="dim"/>
+ <text x="570" y="224" class="ta" text-anchor="middle">P2, the waveform you are shaping</text>
+ <path d="M768 194 L800 246" class="box" stroke-width="8" stroke-linecap="round"/>
+ <text x="812" y="196" class="tb">Doppler</text>
+ <text x="812" y="212" class="ts">velocity inside the lumen,</text>
+ <text x="812" y="226" class="ts">the only view into the block</text>
+ <text x="686" y="406" class="tbad" text-anchor="end">no tees in the straight run or the block</text>
+
+ <!-- plenum -->
+ <path d="M384 300 H470" class="fl"/>
+ <rect x="470" y="232" width="76" height="102" rx="2" class="box"/>
+ <rect x="486" y="244" width="44" height="42" class="boxq"/>
+ <rect x="486" y="286" width="44" height="36" class="flfill"/>
+ <text x="508" y="270" class="ts" text-anchor="middle">air</text>
+ <text x="508" y="352" class="tb" text-anchor="middle">plenum</text>
+ <text x="508" y="367" class="ts" text-anchor="middle">rounds the pulse</text>
+
+ <!-- taper + run -->
+ <path d="M546 300 H582" class="fl"/>
+ <path d="M582 290 L604 295 L604 305 L582 310 Z" class="flfill"/>
+ <path d="M604 300 H690" class="fl"/>
+ <text x="686" y="286" class="ts" text-anchor="end">3 mm, straight run</text>
+
+ <!-- phantom -->
+ <rect x="690" y="248" width="150" height="104" rx="2" class="box"/>
+ <rect x="684" y="294" width="162" height="12" fill="var(--fluid-soft)"/>
+ <text x="765" y="370" class="tb" text-anchor="middle">phantom</text>
+ <text x="765" y="385" class="ts" text-anchor="middle">wall-less 3 mm lumen</text>
+
+ <!-- R2 -->
+ <path d="M840 300 H874" class="fl"/>
+ <rect x="874" y="266" width="80" height="68" rx="2" class="box"/>
+ <path d="M886 288 h56 M886 312 h56" class="boxq"/>
+ <path d="M914 258 v-12" class="dim" marker-end="url(#aS)"/>
+ <text x="914" y="352" class="tb" text-anchor="middle">R2, adjustable</text>
+ <text x="914" y="367" class="ts" text-anchor="middle">screw clamp or</text>
+ <text x="914" y="382" class="ts" text-anchor="middle">needle valve</text>
+
+ <!-- return + pump -->
+ <path d="M954 300 H968 V462 H596" class="fl"/>
+ <rect x="456" y="428" width="140" height="68" rx="2" class="box"/>
+ <circle cx="526" cy="462" r="18" class="boxq"/>
+ <text x="526" y="420" class="tb" text-anchor="middle">OMEGAFLEX</text>
+ <text x="526" y="510" class="ts" text-anchor="middle">lifts 1.8 psi against a 20 psi rating</text>
+ <path d="M456 462 H46 V130" class="fl" marker-end="url(#aF)"/>
+ <text x="270" y="452" class="tf" text-anchor="middle">refill, discharge below the surface</text>
+</svg>
+</div>
+<figcaption><b>The pump never touches the waveform.</b> It lifts fluid to the jar, the weir pins the
+level, and the free surface blocks everything upstream, including the pump's own roller pulses. That
+is what frees you to use the OMEGAFLEX and to set heart rate independently of flow.</figcaption>
+</figure>
+<p class="hint">Drawing scrolls sideways.</p>
+
+<h2>2 &nbsp;Why R1 has to be there</h2>
+<p class="sub">The single detail most likely to be left out, and it makes the difference between a pulse and nothing.</p>
+
+<figure>
+<div class="scroller">
+<svg viewBox="0 0 980 330" role="img" aria-label="Two panels. Without R1 the piston's displacement travels backward into the jar, which is infinite compliance, and almost nothing reaches the vessel. With R1 in place most of the displacement is forced forward into the vessel.">
+ <defs>
+  <marker id="bBad" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><polygon points="0,1 10,5 0,9" class="mkbad"/></marker>
+  <marker id="bFl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><polygon points="0,1 10,5 0,9" class="mkfl"/></marker>
+ </defs>
+
+ <!-- panel A -->
+ <text x="20" y="40" class="tb">Without R1</text>
+ <text x="20" y="58" class="tbad">almost no pulse reaches the vessel</text>
+ <rect x="24" y="96" width="70" height="56" rx="2" class="box"/>
+ <rect x="24" y="118" width="70" height="34" class="flfill"/>
+ <text x="59" y="170" class="ts" text-anchor="middle">jar</text>
+ <text x="59" y="184" class="ts" text-anchor="middle">infinite compliance</text>
+ <path d="M94 124 H240" class="fl"/>
+ <circle cx="240" cy="124" r="6" class="mkfl"/>
+ <path d="M240 124 H392" class="fl"/>
+ <rect x="392" y="100" width="56" height="48" rx="2" class="box"/>
+ <text x="420" y="170" class="ts" text-anchor="middle">vessel</text>
+ <rect x="218" y="36" width="44" height="54" rx="2" class="box"/>
+ <path d="M240 36 v-14" class="metal" stroke-width="5"/>
+ <text x="272" y="34" class="ts">piston pushes</text>
+ <path d="M228 206 H102" class="bad" marker-end="url(#bBad)"/>
+ <text x="166" y="228" class="tbad" text-anchor="middle">most of it goes back</text>
+ <path d="M252 206 H380" class="fl" stroke-width="2" marker-end="url(#bFl)"/>
+ <text x="316" y="228" class="tf" text-anchor="middle">a trickle forward</text>
+
+ <!-- divider -->
+ <path d="M490 24 V300" class="hair"/>
+
+ <!-- panel B -->
+ <text x="518" y="40" class="tb">With R1</text>
+ <text x="518" y="58" class="tf">the displacement is forced forward</text>
+ <rect x="522" y="96" width="62" height="56" rx="2" class="box"/>
+ <rect x="522" y="118" width="62" height="34" class="flfill"/>
+ <text x="553" y="170" class="ts" text-anchor="middle">jar</text>
+ <path d="M584 124 H644" class="fl"/>
+ <rect x="644" y="104" width="54" height="40" rx="2" class="box"/>
+ <path d="M654 116 h34 M654 132 h34" class="boxq"/>
+ <text x="671" y="164" class="tb" text-anchor="middle">R1</text>
+ <path d="M698 124 H790" class="fl"/>
+ <circle cx="790" cy="124" r="6" class="mkfl"/>
+ <path d="M790 124 H912" class="fl"/>
+ <rect x="912" y="100" width="56" height="48" rx="2" class="box"/>
+ <text x="940" y="170" class="ts" text-anchor="middle">vessel</text>
+ <rect x="768" y="36" width="44" height="54" rx="2" class="box"/>
+ <path d="M790 36 v-14" class="metal" stroke-width="5"/>
+ <path d="M778 206 H706" class="fl" stroke-width="2" marker-end="url(#bFl)"/>
+ <text x="742" y="228" class="ts" text-anchor="middle">blocked</text>
+ <path d="M802 206 H930" class="flfat" marker-end="url(#bFl)"/>
+ <text x="866" y="228" class="tf" text-anchor="middle">most of it goes forward</text>
+
+ <text x="490" y="288" class="ts" text-anchor="middle">arrow weight shows where the half millilitre actually goes</text>
+</svg>
+</div>
+<figcaption><b>R1 much larger than R2 is the condition.</b> The jar is a free surface, so it will
+absorb anything offered to it without its pressure moving. R1 is what makes the path backward
+expensive and the path forward cheap. Leave it out and the rig runs, quietly, with almost no
+pulsation, and the cause is not obvious from looking at it.</figcaption>
+</figure>
+
+<h2>3 &nbsp;Which knob does what</h2>
+<p class="sub">Five controls, five features, and none of them fight each other. That is what no pump on the inventory could offer.</p>
+
+<figure>
+<div class="scroller">
+<svg viewBox="0 0 980 520" role="img" aria-label="The MCA velocity waveform annotated with the hardware that sets each feature: jar height and R1 set the mean level, crank throw sets the pulse height, drive speed sets the cycle length, cam profile sets the upstroke and notch, plenum and R2 set the diastolic decay.">
+ <defs>
+  <marker id="cS" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><polygon points="1,2 9,5 1,8" class="mksig"/></marker>
+ </defs>
+
+ <path d="M150 440 H900" class="flthin"/>
+ <path d="M150 180 V440" class="flthin"/>
+ <text x="144" y="186" class="ts" text-anchor="end">cm/s</text>
+ <text x="144" y="444" class="ts" text-anchor="end">0</text>
+
+ <path d="M150 218 H830" class="dash"/>
+ <path d="M150 280 H830" class="dash"/>
+ <path d="M150 338 H830" class="dash"/>
+ <text x="842" y="215" class="tf">PSV 110</text>
+ <text x="842" y="277" class="tf">MFV 76</text>
+ <text x="842" y="335" class="tf">EDV 45</text>
+
+ <polyline points="190.0,338.0 191.0,337.9 191.9,337.4 192.9,336.7 193.9,335.7 194.9,334.5 195.8,333.0 196.8,331.4 197.8,329.4 198.7,327.3 199.7,325.0 200.7,322.6 201.7,319.9 202.6,317.1 203.6,314.2 204.6,311.1 205.5,308.0 206.5,304.7 207.5,301.3 208.5,297.9 209.4,294.3 210.4,290.8 211.4,287.2 212.3,283.5 213.3,279.8 214.3,276.2 215.3,272.5 216.2,268.8 217.2,265.2 218.2,261.7 219.1,258.1 220.1,254.7 221.1,251.3 222.1,248.0 223.0,244.9 224.0,241.8 225.0,238.9 225.9,236.1 226.9,233.4 227.9,231.0 228.9,228.7 229.8,226.6 230.8,224.6 231.8,223.0 232.7,221.5 233.7,220.3 234.7,219.3 235.7,218.6 236.6,218.1 237.6,218.0 238.6,218.1 239.5,218.3 240.5,218.6 241.5,219.1 242.5,219.6 243.4,220.3 244.4,221.0 245.4,221.8 246.3,222.7 247.3,223.6 248.3,224.6 249.3,225.6 250.2,226.6 251.2,227.6 252.2,228.6 253.1,229.6 254.1,230.6 255.1,231.6 256.1,232.5 257.0,233.4 258.0,234.2 259.0,234.9 259.9,235.6 260.9,236.1 261.9,236.6 262.9,236.9 263.8,237.1 264.8,237.2 265.8,237.2 266.7,237.1 267.7,237.0 268.7,236.8 269.7,236.6 270.6,236.3 271.6,236.1 272.6,235.8 273.5,235.4 274.5,235.1 275.5,234.7 276.5,234.4 277.4,234.0 278.4,233.6 279.4,233.2 280.3,232.8 281.3,232.5 282.3,232.1 283.3,231.8 284.2,231.4 285.2,231.1 286.2,230.9 287.1,230.6 288.1,230.4 289.1,230.2 290.1,230.1 291.0,230.0 292.0,230.0 293.0,230.1 293.9,230.2 294.9,230.5 295.9,230.9 296.9,231.3 297.8,231.9 298.8,232.5 299.8,233.2 300.7,234.0 301.7,234.9 302.7,235.9 303.7,236.9 304.6,237.9 305.6,239.0 306.6,240.2 307.5,241.4 308.5,242.7 309.5,243.9 310.5,245.3 311.4,246.6 312.4,247.9 313.4,249.3 314.3,250.7 315.3,252.1 316.3,253.5 317.3,254.9 318.2,256.3 319.2,257.7 320.2,259.0 321.1,260.3 322.1,261.7 323.1,262.9 324.1,264.2 325.0,265.4 326.0,266.6 327.0,267.7 327.9,268.7 328.9,269.7 329.9,270.7 330.9,271.6 331.8,272.4 332.8,273.1 333.8,273.7 334.7,274.3 335.7,274.7 336.7,275.1 337.7,275.4 338.6,275.5 339.6,275.6 340.6,275.6 341.5,275.5 342.5,275.3 343.5,275.1 344.5,274.8 345.4,274.5 346.4,274.1 347.4,273.7 348.3,273.3 349.3,272.8 350.3,272.3 351.3,271.8 352.2,271.3 353.2,270.8 354.2,270.3 355.1,269.8 356.1,269.3 357.1,268.8 358.1,268.3 359.0,267.9 360.0,267.5 361.0,267.1 361.9,266.8 362.9,266.5 363.9,266.3 364.9,266.1 365.8,266.0 366.8,266.0 367.8,266.0 368.7,266.1 369.7,266.2 370.7,266.4 371.7,266.6 372.6,266.9 373.6,267.2 374.6,267.6 375.5,268.0 376.5,268.4 377.5,268.9 378.5,269.4 379.4,270.0 380.4,270.5 381.4,271.2 382.3,271.8 383.3,272.4 384.3,273.1 385.3,273.8 386.2,274.6 387.2,275.3 388.2,276.1 389.1,276.9 390.1,277.7 391.1,278.5 392.1,279.3 393.0,280.2 394.0,281.0 395.0,281.9 395.9,282.7 396.9,283.6 397.9,284.4 398.9,285.3 399.8,286.1 400.8,287.0 401.8,287.8 402.7,288.7 403.7,289.5 404.7,290.3 405.7,291.1 406.6,291.9 407.6,292.7 408.6,293.4 409.5,294.2 410.5,294.9 411.5,295.6 412.5,296.2 413.4,296.8 414.4,297.5 415.4,298.0 416.3,298.6 417.3,299.1 418.3,299.6 419.3,300.0 420.2,300.4 421.2,300.8 422.2,301.1 423.1,301.4 424.1,301.6 425.1,301.8 426.1,301.9 427.0,302.0 428.0,302.0 429.0,302.0 429.9,302.0 430.9,302.1 431.9,302.2 432.9,302.2 433.8,302.3 434.8,302.5 435.8,302.6 436.7,302.7 437.7,302.9 438.7,303.1 439.7,303.3 440.6,303.5 441.6,303.7 442.6,304.0 443.5,304.3 444.5,304.5 445.5,304.8 446.5,305.1 447.4,305.4 448.4,305.7 449.4,306.1 450.3,306.4 451.3,306.8 452.3,307.2 453.3,307.5 454.2,307.9 455.2,308.3 456.2,308.7 457.1,309.1 458.1,309.6 459.1,310.0 460.1,310.4 461.0,310.9 462.0,311.3 463.0,311.8 463.9,312.3 464.9,312.7 465.9,313.2 466.9,313.7 467.8,314.2 468.8,314.7 469.8,315.2 470.7,315.7 471.7,316.2 472.7,316.7 473.7,317.2 474.6,317.7 475.6,318.2 476.6,318.7 477.5,319.2 478.5,319.7 479.5,320.3 480.5,320.8 481.4,321.3 482.4,321.8 483.4,322.3 484.3,322.8 485.3,323.3 486.3,323.8 487.3,324.3 488.2,324.8 489.2,325.3 490.2,325.8 491.1,326.3 492.1,326.8 493.1,327.3 494.1,327.7 495.0,328.2 496.0,328.7 497.0,329.1 497.9,329.6 498.9,330.0 499.9,330.4 500.9,330.9 501.8,331.3 502.8,331.7 503.8,332.1 504.7,332.5 505.7,332.8 506.7,333.2 507.7,333.6 508.6,333.9 509.6,334.3 510.6,334.6 511.5,334.9 512.5,335.2 513.5,335.5 514.5,335.7 515.4,336.0 516.4,336.3 517.4,336.5 518.3,336.7 519.3,336.9 520.3,337.1 521.3,337.3 522.2,337.4 523.2,337.5 524.2,337.7 525.1,337.8 526.1,337.8 527.1,337.9 528.1,338.0 529.0,338.0 530.0,338.0 531.0,337.9 531.9,337.4 532.9,336.7 533.9,335.7 534.9,334.5 535.8,333.0 536.8,331.4 537.8,329.4 538.7,327.3 539.7,325.0 540.7,322.6 541.7,319.9 542.6,317.1 543.6,314.2 544.6,311.1 545.5,308.0 546.5,304.7 547.5,301.3 548.5,297.9 549.4,294.3 550.4,290.8 551.4,287.2 552.3,283.5 553.3,279.8 554.3,276.2 555.3,272.5 556.2,268.8 557.2,265.2 558.2,261.7 559.1,258.1 560.1,254.7 561.1,251.3 562.1,248.0 563.0,244.9 564.0,241.8 565.0,238.9 565.9,236.1 566.9,233.4 567.9,231.0 568.9,228.7 569.8,226.6 570.8,224.6 571.8,223.0 572.7,221.5 573.7,220.3 574.7,219.3 575.7,218.6 576.6,218.1 577.6,218.0 578.6,218.1 579.5,218.3 580.5,218.6 581.5,219.1 582.5,219.6 583.4,220.3 584.4,221.0 585.4,221.8 586.3,222.7 587.3,223.6 588.3,224.6 589.3,225.6 590.2,226.6 591.2,227.6 592.2,228.6 593.1,229.6 594.1,230.6 595.1,231.6 596.1,232.5 597.0,233.4 598.0,234.2 599.0,234.9 599.9,235.6 600.9,236.1 601.9,236.6 602.9,236.9 603.8,237.1 604.8,237.2 605.8,237.2 606.7,237.1 607.7,237.0 608.7,236.8 609.7,236.6 610.6,236.3 611.6,236.1 612.6,235.8 613.5,235.4 614.5,235.1 615.5,234.7 616.5,234.4 617.4,234.0 618.4,233.6 619.4,233.2 620.3,232.8 621.3,232.5 622.3,232.1 623.3,231.8 624.2,231.4 625.2,231.1 626.2,230.9 627.1,230.6 628.1,230.4 629.1,230.2 630.1,230.1 631.0,230.0 632.0,230.0 633.0,230.1 633.9,230.2 634.9,230.5 635.9,230.9 636.9,231.3 637.8,231.9 638.8,232.5 639.8,233.2 640.7,234.0 641.7,234.9 642.7,235.9 643.7,236.9 644.6,237.9 645.6,239.0 646.6,240.2 647.5,241.4 648.5,242.7 649.5,243.9 650.5,245.3 651.4,246.6 652.4,247.9 653.4,249.3 654.3,250.7 655.3,252.1 656.3,253.5 657.3,254.9 658.2,256.3 659.2,257.7 660.2,259.0 661.1,260.3 662.1,261.7 663.1,262.9 664.1,264.2 665.0,265.4 666.0,266.6 667.0,267.7 667.9,268.7 668.9,269.7 669.9,270.7 670.9,271.6 671.8,272.4 672.8,273.1 673.8,273.7 674.7,274.3 675.7,274.7 676.7,275.1 677.7,275.4 678.6,275.5 679.6,275.6 680.6,275.6 681.5,275.5 682.5,275.3 683.5,275.1 684.5,274.8 685.4,274.5 686.4,274.1 687.4,273.7 688.3,273.3 689.3,272.8 690.3,272.3 691.3,271.8 692.2,271.3 693.2,270.8 694.2,270.3 695.1,269.8 696.1,269.3 697.1,268.8 698.1,268.3 699.0,267.9 700.0,267.5 701.0,267.1 701.9,266.8 702.9,266.5 703.9,266.3 704.9,266.1 705.8,266.0 706.8,266.0 707.8,266.0 708.7,266.1 709.7,266.2 710.7,266.4 711.7,266.6 712.6,266.9 713.6,267.2 714.6,267.6 715.5,268.0 716.5,268.4 717.5,268.9 718.5,269.4 719.4,270.0 720.4,270.5 721.4,271.2 722.3,271.8 723.3,272.4 724.3,273.1 725.3,273.8 726.2,274.6 727.2,275.3 728.2,276.1 729.1,276.9 730.1,277.7 731.1,278.5 732.1,279.3 733.0,280.2 734.0,281.0 735.0,281.9 735.9,282.7 736.9,283.6 737.9,284.4 738.9,285.3 739.8,286.1 740.8,287.0 741.8,287.8 742.7,288.7 743.7,289.5 744.7,290.3 745.7,291.1 746.6,291.9 747.6,292.7 748.6,293.4 749.5,294.2 750.5,294.9 751.5,295.6 752.5,296.2 753.4,296.8 754.4,297.5 755.4,298.0 756.3,298.6 757.3,299.1 758.3,299.6 759.3,300.0 760.2,300.4 761.2,300.8 762.2,301.1 763.1,301.4 764.1,301.6 765.1,301.8 766.1,301.9 767.0,302.0 768.0,302.0 769.0,302.0 769.9,302.0 770.9,302.1 771.9,302.2 772.9,302.2 773.8,302.3 774.8,302.5 775.8,302.6 776.7,302.7 777.7,302.9 778.7,303.1 779.7,303.3 780.6,303.5 781.6,303.7 782.6,304.0 783.5,304.3 784.5,304.5 785.5,304.8 786.5,305.1 787.4,305.4 788.4,305.7 789.4,306.1 790.3,306.4 791.3,306.8 792.3,307.2 793.3,307.5 794.2,307.9 795.2,308.3 796.2,308.7 797.1,309.1 798.1,309.6 799.1,310.0 800.1,310.4 801.0,310.9 802.0,311.3 803.0,311.8 803.9,312.3 804.9,312.7 805.9,313.2 806.9,313.7 807.8,314.2 808.8,314.7 809.8,315.2 810.7,315.7 811.7,316.2 812.7,316.7 813.7,317.2 814.6,317.7 815.6,318.2 816.6,318.7 817.5,319.2 818.5,319.7 819.5,320.3 820.5,320.8 821.4,321.3 822.4,321.8 823.4,322.3 824.3,322.8 825.3,323.3 826.3,323.8 827.3,324.3 828.2,324.8 829.2,325.3 830.2,325.8 831.1,326.3 832.1,326.8 833.1,327.3 834.1,327.7 835.0,328.2 836.0,328.7 837.0,329.1 837.9,329.6 838.9,330.0 839.9,330.4 840.9,330.9 841.8,331.3 842.8,331.7 843.8,332.1 844.7,332.5 845.7,332.8 846.7,333.2 847.7,333.6 848.6,333.9 849.6,334.3 850.6,334.6 851.5,334.9 852.5,335.2 853.5,335.5 854.5,335.7 855.4,336.0 856.4,336.3 857.4,336.5 858.3,336.7 859.3,336.9 860.3,337.1 861.3,337.3 862.2,337.4 863.2,337.5 864.2,337.7 865.1,337.8 866.1,337.8 867.1,337.9 868.1,338.0 869.0,338.0 870.0,338.0" class="trace"/>
+
+ <!-- mean level -->
+ <path d="M150 280 H118 V252" class="dim"/>
+ <text x="112" y="246" class="ta" text-anchor="end">jar height + R1</text>
+ <text x="112" y="261" class="ts" text-anchor="end">set this level</text>
+
+ <!-- pulse height -->
+ <path d="M258 218 V338" class="dim" marker-start="url(#cS)" marker-end="url(#cS)"/>
+ <path d="M258 196 V214" class="dim"/>
+ <text x="258" y="188" class="ta" text-anchor="middle">crank throw sets this height</text>
+
+ <!-- cycle length -->
+ <path d="M190 472 H530" class="dim" marker-start="url(#cS)" marker-end="url(#cS)"/>
+ <text x="360" y="492" class="ta" text-anchor="middle">drive speed sets this width, 833 ms at 72 bpm</text>
+
+ <!-- shape -->
+ <path d="M330 252 L372 238" class="lead"/>
+ <text x="378" y="242" class="ta">cam profile sets the upstroke</text>
+ <text x="378" y="257" class="ts">and whether there is a notch</text>
+
+ <!-- decay -->
+ <path d="M706 322 L742 376" class="lead"/>
+ <text x="748" y="382" class="ta">plenum and R2</text>
+ <text x="748" y="397" class="ts">set this decay</text>
+
+ <text x="150" y="508" class="ts">0.51 mL shuttled per beat produces the whole excursion from EDV to PSV</text>
+</svg>
+</div>
+<figcaption><b>Heart rate and cardiac output are finally separate knobs.</b> On any peristaltic they
+are the same knob, because beats per minute is rollers times RPM and flow is displacement times RPM.
+Here the drive motor sets rate, the jar and R1 set flow, and neither one touches the other.</figcaption>
+</figure>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Control</th><th>Sets</th><th>Value for a normal MCA</th></tr></thead>
+  <tbody>
+    <tr><td>Jar height and R1</td><td>Mean flow</td><td class="num">324 mL/min, MFV 76 cm/s</td></tr>
+    <tr><td>Crank throw</td><td>Pulse amplitude</td><td class="num">4.3 mm throw, 0.51 mL/beat</td></tr>
+    <tr><td>Drive speed</td><td>Heart rate</td><td class="num">72 bpm</td></tr>
+    <tr><td>Cam profile</td><td>Upstroke and notch</td><td class="num">117 ms ejection</td></tr>
+    <tr><td>Plenum air volume and R2</td><td>Diastolic decay, so PI</td><td class="num">PI 0.85</td></tr>
+  </tbody>
+</table>
+</div>
+
+<ul class="notes">
+  <li><b>It is small because it only makes the variation.</b>
+  <span>Stroke volume through the vessel is 4.5 mL per beat, but the steady source already supplies
+  the mean. The piston only has to redistribute flow in time, which is 0.51 mL, about 11%. A 3 mL
+  syringe at 8.7 mm of stroke, under a newton of force, moving at 26 mm/s. That is a hobby servo on
+  a crank.</span></li>
+  <li><b>This is not the stepper piston pump that failed in the literature.</b>
+  <span>A Clemson thesis and a Groningen group both built stepper-driven piston pumps that had to
+  carry the whole circulation, and both fell short of their requirements. This carries no net flow,
+  needs no check valves, needs no priming and sees almost no load. Different job.</span></li>
+  <li><b>A cam is a waveform you can hold in your hand.</b>
+  <span>Because the shape comes from a printed profile rather than from pump physics, a second cam
+  gives a second waveform. Normal, high pulsatility, blunted. That is a far more useful phantom than
+  one that produces whatever its pump happens to produce, and it lets the rig replay a measured
+  patient waveform.</span></li>
+  <li><b>Pressure is the tuning instrument, Doppler is the acceptance test.</b>
+  <span>P2 sits at the last place you can tee without disturbing the straight run, so it shows the
+  pressure waveform arriving at the vessel. It responds instantly and is clean, which is what you
+  want while cutting cams. But it is not the answer: the velocity waveform inside the lumen is, and
+  the taper, the run and the vessel's own compliance all act between them. You cannot tee into a
+  wall-less cast lumen, so the Doppler is the only instrument that sees inside the block. Tune
+  against P2, accept against the Doppler. P1 exists so that when the pulse is too small you can tell
+  whether the piston is underdelivering or the line is eating it.</span></li>
+  <li><b>What still has to be measured.</b>
+  <span>The relationship between cam profile and the velocity that comes out is not one to one,
+  because the plenum, the vessel compliance and R2 all act on it. Expect to iterate the cam against
+  the Doppler trace. That iteration is the project.</span></li>
+</ul>
+
+<footer>
+Pulser sized for a 3 mm lumen at EDV 45 and PSV 110 cm/s, 72 bpm, which gives MFV 76 cm/s and
+PI 0.85. Velocity bands are Group 2's own. Displacement and force are derived from those, not
+measured, and want checking on the bench.
+</footer>
+</div>
