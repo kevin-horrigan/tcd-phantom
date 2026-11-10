@@ -120,7 +120,9 @@ def main():
     pp_pa = r_down * q.max()                      # peak piston flow x downstream R
 
     A("WHAT PRESSURE THIS LOOP ACTUALLY MAKES")
-    A("  %-36s %8s %8s %9s" % ("", "psi", "kPa", "mmHg"))
+    # mm of fluid first, because that is the unit the head budget is written
+    # in and the unit a standpipe reads in without being asked.
+    A("  %-36s %9s %8s %8s %9s" % ("", "mm fluid", "psi", "kPa", "mmHg"))
     for nm, mm in (("tank head, static, no flow", TANK_MM),
                    ("mean at the piston tee", TANK_MM - crack_mm - up_mm),
                    ("mean at the phantom inlet", constrict_mm + sum(
@@ -130,8 +132,8 @@ def main():
                    ("the 91050 check valve alone", crack_mm),
                    ("the printed ball check alone", 2.2)):
         pa = head_pa(mm)
-        A("  %-36s %8.3f %8.2f %9.1f"
-          % (nm, pa / PSI, pa / KPA, pa / MMHG))
+        A("  %-36s %9.0f %8.3f %8.2f %9.1f"
+          % (nm, mm, pa / PSI, pa / KPA, pa / MMHG))
     A("")
     A("  The pulse line is a first-order estimate: peak commanded piston flow")
     A("  through the resistance downstream of the tee, ignoring compliance and")
