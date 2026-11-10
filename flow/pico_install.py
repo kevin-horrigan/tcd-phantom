@@ -22,6 +22,17 @@ import picolink
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FILES = ("config.py", "drive.py")
+# Uploaded when present. net.py is harmless on a non-W board, it just cannot
+# be imported there. secrets.py is gitignored and may legitimately not exist.
+OPTIONAL = ("net.py", "secrets.py")
+
+WIFI_PROBE = """
+try:
+    import network
+    print("WIFI|yes")
+except ImportError:
+    print("WIFI|no")
+"""
 
 CHECK = """
 import drive, config as C
@@ -88,6 +99,18 @@ def main():
         for f in FILES:
             name, n = pico.put(os.path.join(HERE, "pico", f), f)
             print("  uploaded %s, %d bytes" % (name, n))
+        for f in OPTIONAL:
+            src = os.path.join(HERE, "pico", f)
+            if os.path.exists(src):
+                name, n = pico.put(src, f)
+                print("  uploaded %s, %d bytes" % (name, n))
+            else:
+                print("  skipped %s, not present locally" % f)
+
+        # Wifi is a firmware question, not a software one, so answer it here
+        # rather than letting net.py fail confusingly later.
+        out, _ = pico.exec(WIFI_PROBE)
+        wifi = "WIFI|yes" in out
 
         out, err = pico.exec(CHECK)
         if err.strip():
@@ -104,6 +127,16 @@ def main():
         print("  beat %s mm = %d steps" % (beat, round(float(beat) * float(spmm))))
         print("  soft limit %s mm, beat profile %s samples" % (soft, n))
         print("  pins STEP=%s DIR=%s EN=%s" % (st, dr, en))
+        print("")
+        if wifi:
+            print("firmware has wifi. For wireless control, upload secrets.py")
+            print("if you have not, then on the board: import net; net.serve()")
+        else:
+            print("NO WIFI in this firmware. This is the RPI_PICO2 build, which")
+            print("has no CYW43 driver, so net.py cannot run no matter what.")
+            print("If the board is a Pico 2 W, reflash with RPI_PICO2_W. See")
+            print("pico/README.md section 6. A non-W build runs fine on W")
+            print("hardware, which is why this looks like a software fault.")
 
         if opts.get("--test"):
             print("\n--- moving 2 mm and back, slowly. WATCH THE CARRIAGE ---")

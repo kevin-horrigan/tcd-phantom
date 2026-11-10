@@ -6,9 +6,16 @@
     python picolink.py ls                   list what is on the board
     python picolink.py eval "2+2"           run one expression
     python picolink.py run step_test.py     import and run it, stream output
+    python picolink.py put a.py main.py    copy, renaming it on the board
+    python picolink.py get drive.py        read a file back, verified by length
+
+Uploads are verified by a sha256 computed ON the board, because the link has
+no flow control and a file that lands short still imports and then misbehaves
+somewhere that looks unrelated.
 
 Needs pyserial only. The port is found by VID 2E8A, or give it: --port COM15
 """
+import hashlib
 import sys
 import time
 import serial
@@ -89,6 +96,19 @@ class Pico:
         if b"raw REPL" not in self.s.read_until(b">"):
             raise SystemExit("could not get a raw REPL on " + self.port)
 
+    # A single exec that prints more than about 8 KB LOSES DATA, silently.
+    # MicroPython's USB CDC has no flow control: when the board outruns the
+    # host it drops what it cannot buffer, and the host has no way to know.
+    # Measured on 2026-11-10 reading a 12 KB file back in one print(): the
+    # result was exactly 32 bytes short, all of it missing from offset 8192.
+    #
+    # Nothing on this side can recover dropped bytes, so the rule is a
+    # protocol one: never ask the board to emit a large blob in one go. get()
+    # reads in bounded chunks and checks the length. put() verifies by a hash
+    # computed ON the board, which is 64 characters however big the file is,
+    # so it cannot be truncated into looking correct.
+    SAFE_OUT = 4096
+
     def exec(self, code, stream=False, wait=600.0):
         """Run code on the board. Returns (stdout, stderr) as text.
 
@@ -100,7 +120,7 @@ class Pico:
         self.s.write(code.encode() + CTRL_D)
         if self.s.read(2) != b"OK":
             raise SystemExit("board rejected the code")
-        out = b""
+        out = bytearray()
         deadline = time.time() + wait
         while True:
             chunk = self.s.read_until(CTRL_D)
@@ -115,17 +135,84 @@ class Pico:
                 raise SystemExit("board still running after %.0f s, gave up" % wait)
         err = self.s.read_until(CTRL_D)
         self.s.read_until(b">")
-        dec = lambda b: b.rstrip(CTRL_D).decode("utf-8", "replace")
+        dec = lambda b: bytes(b).rstrip(CTRL_D).decode("utf-8", "replace")
+        if len(out) > self.SAFE_OUT and not stream:
+            sys.stderr.write(
+                "picolink: %d bytes from one exec, over the %d byte point "
+                "where USB CDC starts dropping output silently. Read it in "
+                "chunks instead.\n" % (len(out), self.SAFE_OUT))
         return dec(out), dec(err)
 
-    def put(self, local, remote=None):
+    def sha(self, remote):
+        """sha256 of a file ON the board. 64 characters, so it cannot be
+        truncated into looking right the way a file dump can."""
+        out, err = self.exec(
+            "import hashlib, binascii\n"
+            "h = hashlib.sha256()\n"
+            "f = open(%r, 'rb')\n"
+            "while True:\n"
+            "    b = f.read(512)\n"
+            "    if not b: break\n"
+            "    h.update(b)\n"
+            "f.close()\n"
+            "print(binascii.hexlify(h.digest()).decode())" % remote)
+        if err.strip():
+            raise SystemExit("could not hash %s on the board:\n%s" % (remote, err))
+        return out.strip()
+
+    def put(self, local, remote=None, verify=True):
+        """Copy a file to the board and PROVE it arrived intact.
+
+        Verification is not ceremony here. The upload path is thousands of
+        small writes over a link with no flow control, and a file that lands
+        short still imports, still runs, and misbehaves later in a way that
+        looks like a logic bug. Comparing hashes costs one round trip.
+        """
         remote = remote or local.replace("\\", "/").split("/")[-1]
         data = open(local, "rb").read()
         self.exec("f=open(%r,'wb')" % remote)
         for i in range(0, len(data), 256):
             self.exec("f.write(%r)" % data[i:i + 256])
         self.exec("f.close()")
+        if verify:
+            want = hashlib.sha256(data).hexdigest()
+            got = self.sha(remote)
+            if got != want:
+                raise SystemExit(
+                    "%s did not arrive intact.\n  local  %s\n  board  %s\n"
+                    "Nothing on the board should be trusted until this passes."
+                    % (remote, want, got))
         return remote, len(data)
+
+    def get(self, remote, local=None, chunk=1024):
+        """Read a file off the board in bounded pieces, and check the length.
+
+        One big print() would be simpler and would silently lose bytes past
+        about 8 KB. This asks for a slice at a time and compares what came
+        back against os.stat, so a short read is an error rather than a file.
+        """
+        out, err = self.exec("import os\nprint(os.stat(%r)[6])" % remote)
+        if err.strip():
+            raise SystemExit("no such file on the board: %s" % remote)
+        size = int(out.strip())
+        buf = bytearray()
+        while len(buf) < size:
+            o, e = self.exec(
+                "f=open(%r,'rb')\nf.seek(%d)\n"
+                "import binascii\nprint(binascii.hexlify(f.read(%d)).decode())\n"
+                "f.close()" % (remote, len(buf), chunk))
+            if e.strip():
+                raise SystemExit("read failed at offset %d:\n%s" % (len(buf), e))
+            piece = bytes.fromhex(o.strip())
+            if not piece:
+                break
+            buf += piece
+        if len(buf) != size:
+            raise SystemExit("read %d of %d bytes from %s, the link dropped data"
+                             % (len(buf), size, remote))
+        if local:
+            open(local, "wb").write(buf)
+        return bytes(buf)
 
 
 def main(argv):
@@ -151,10 +238,15 @@ def main(argv):
         elif cmd == "eval":
             out, err = p.exec("print(%s)" % argv[2])
         elif cmd == "put":
-            name, n = p.put(argv[2])
+            # argv[3] is the name ON THE BOARD. It used to be ignored, so
+            # "put pico/drive.py main.py" quietly wrote drive.py instead.
+            name, n = p.put(argv[2], argv[3] if len(argv) > 3 else None)
             out, err = p.exec("import os\nprint(%r, os.stat(%r)[6], 'bytes on board')"
                               % (name, name))
             print("sent %d bytes" % n)
+        elif cmd == "get":
+            data = p.get(argv[2], argv[3] if len(argv) > 3 else None)
+            out, err = "%s: %d bytes read back intact" % (argv[2], len(data)), ""
         elif cmd == "run":
             # fresh import every time, so editing a file and re-running does
             # not silently re-execute the cached module

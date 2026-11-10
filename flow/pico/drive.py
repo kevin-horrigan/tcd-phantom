@@ -125,6 +125,16 @@ def set_zero():
           % -C.SOFT_TRAVEL_MM)
 
 
+def is_zeroed():
+    """Has a zero been declared? Nothing may run a beat before it has.
+
+    There is no endstop on this machine, so this is not a formality. Without
+    a declared zero the soft limit has no datum to be measured from, and the
+    firmware would happily retract the plunger seal out of the barrel.
+    """
+    return _zeroed
+
+
 def mm():
     return pos / C.STEPS_PER_MM
 

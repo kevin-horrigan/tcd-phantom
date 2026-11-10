@@ -39,3 +39,7 @@ venv/
 *.3mf
 # OrcaSlicer CLI drops this next to the output when it cannot make a thumbnail
 [0-9][0-9][0-9][0-9][0-9].log
+
+# Wifi credentials for the Pico. This repo is PUBLIC. pico/secrets_example.py
+# is the template that IS committed; the real one never is.
+flow/pico/secrets.py
