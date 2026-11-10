@@ -120,8 +120,13 @@ def _wait_idle():
         time.sleep_us(d + 40)
 
 
+_on = False
+
+
 def enable(on=True):
+    global _on
     _en.value((0 if on else 1) if C.EN_ACTIVE_LOW else (1 if on else 0))
+    _on = on
     if on:
         time.sleep_ms(2)      # driver needs a moment before the first step
 
@@ -163,6 +168,15 @@ def _burst(steps, sps):
     global pos, _busy_us, _dir_now, clipped
     if steps == 0:
         return 0
+    if not _on:
+        # Second time this shape of fault appeared. back() went straight to
+        # _burst without enabling, so pulses went into a disabled driver, the
+        # shaft stayed put, pos advanced and it reported success. Patching
+        # back() would fix one caller. Refusing here fixes every caller that
+        # will ever be written, including the ones not written yet.
+        raise RuntimeError(
+            "driver is disabled, so these %d steps would go nowhere while "
+            "position advanced. Call enable(True) first." % steps)
     want = 1 if steps > 0 else 0
     d = want if C.DIR_ADVANCE else 1 - want
     n = abs(steps)
@@ -465,9 +479,45 @@ def diag(revs=0.25):
     return True
 
 
+# Bounds for hand-driven moves. They live HERE and not in whatever tool is
+# calling, because a limit enforced only in a user interface is not a limit:
+# the next caller, or a curl against the same endpoint, simply does not have
+# it. The firmware is the only layer every path goes through.
+JOG_MAX_REVS = 2.0
+JOG_MIN_RPM, JOG_MAX_RPM = 10.0, 60.0
+
+
+def jog(revs=0.25, rpm=30.0):
+    """One bounded move, enable through de-energise, for bench tools.
+
+    Exists so that a dial, a web page or a REPL does not have to reach into
+    _burst and _wait_idle to turn the shaft. Those are private because they
+    assume a caller that has already enabled the driver, checked the limits
+    and will wait for PIO; a tool that borrows them inherits all three
+    obligations without being told about any of them.
+
+    De-energises afterwards, deliberately. Between jogs the shaft should turn
+    by hand, because the thing being done with it is reading a mark.
+    """
+    if not 0 < abs(revs) <= JOG_MAX_REVS:
+        raise ValueError("revs must be between 0 and %.1f, got %r"
+                         % (JOG_MAX_REVS, revs))
+    if not JOG_MIN_RPM <= rpm <= JOG_MAX_RPM:
+        raise ValueError("rpm must be %.0f to %.0f, got %r"
+                         % (JOG_MIN_RPM, JOG_MAX_RPM, rpm))
+    steps = int(round(revs * C.STEPS_PER_REV))
+    if _zeroed:
+        _check(pos + steps)
+    enable(True)
+    try:
+        _burst(steps, rpm / 60.0 * C.STEPS_PER_REV)
+        _wait_idle()
+    finally:
+        off()
+    return steps
+
+
 def back(revs=0.5, rpm=30.0):
     """Undo selftest. Separate on purpose, so the evidence sits still first."""
-    _burst(-int(round(revs * C.STEPS_PER_REV)), rpm / 60.0 * C.STEPS_PER_REV)
-    _wait_idle()
-    off()
+    jog(-revs, rpm)
     print("returned %.2f revolutions" % revs)
