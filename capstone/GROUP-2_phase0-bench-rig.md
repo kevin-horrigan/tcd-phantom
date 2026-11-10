@@ -37,7 +37,8 @@ Same core as the high school build, with four additions and one subtraction.
 | Silicone tubing, 3.5 mm ID | Plus a short narrower segment for the test vessel |
 | Arduino + motor driver (L293D or TIP120) | As the original build |
 | **Syringe body, 20-60 mL, for the air chamber** | Moved into the build. Not optional. |
-| **Gauge pressure sensor (MPX5050DP or similar)** | ~$15. You need P and v together. |
+| **Gauge pressure sensor, MPX5050GP** | ~$35. **Buy two** if the budget allows, one each side of the air chamber. See the appendix. |
+| **Clear vertical tube, ~1.5 m, as a water-column manometer** | Pennies, and not a substitute for the above. Calibration standard, mean pressure, and pressure relief. |
 | **Digital kitchen scale, 1 g resolution** | Gravimetric flow ground truth |
 | **USB audio interface or line input** | See the AGC warning below |
 | Plastic container, reservoir, gel, clamps | As the original build |
@@ -133,6 +134,27 @@ Expect the flow-derived value to be a mean over the cross-section while the spec
 distribution up to a peak. Think about which number you are comparing to which, and say so in the
 writeup. That distinction does not go away at the capstone scale.
 
+**The slope is a result, not a nuisance, and you can predict it before you run.** In 3.5 mm tubing at
+these speeds the Reynolds number is around 500 to 1000, comfortably laminar, so a fully developed
+profile is parabolic and its centerline peak is exactly **twice** the cross-sectional mean. Your
+probe is continuous-wave, with no range gate, so it reports the fastest thing in the beam, which for
+a single tube lying entirely inside the beam is that centerline peak.
+
+So: plot Doppler peak against gravimetric mean and **expect a slope near 2.0 and an intercept near
+zero.** That prediction is the whole value of doing this experiment first, because each way of
+missing it names its own cause:
+
+| What you see | What it means |
+|---|---|
+| Slope near 2.0, intercept near 0 | Working. Laminar, developed, and your `f_0` and `c` are right. |
+| Slope near 1.2 | Blunted, plug-like profile. Flow is not developed, so check for too short a straight run upstream of where you insonate. |
+| Slope right but intercept well off zero | A systematic offset. Suspect AGC on the audio input, or a spectrogram noise floor being read as signal. |
+| Slope off by roughly 1.5x | You have the transmit frequency wrong. This is why "2 to 3 MHz" is not an acceptable answer. |
+| Scatter large and unstructured | Angle is moving between runs, or there is air in the loop. |
+
+Write the prediction down **before** you take the data. A calibration that agrees with a number you
+chose afterward has told you nothing.
+
 ### E2. Angle and the cosine law
 
 Vary the insonation angle from roughly 30 to 90 degrees at constant pump setting. Extract the
@@ -163,8 +185,14 @@ makes the case. I will tell you what I think after you have told me what you thi
 
 ### E4. Compliance sweep, pilot version
 
-Vary the air volume in the syringe chamber across its range. At each setting, record pressure and
-the Doppler velocity envelope, and compute pulsatility index from the envelope.
+Vary the air volume in the syringe chamber across its range. At each setting, record the Doppler
+velocity envelope and compute pulsatility index from it, and record pressure at the same time.
+
+Produce the air-volume against PI plot. Then do the thing that makes this transferable: compliance is
+a ratio of volume change to pressure change, so use the pressure record to report **compliance in
+mL/mmHg** at each setting, not just the syringe volume you dialed in. Syringe volume is specific to
+this syringe. Compliance in real units is a specification you can hand to whoever builds the real
+chamber.
 
 Produce a plot of air volume against PI.
 
@@ -213,3 +241,175 @@ A short characterization memo, five pages or so, covering:
 Due alongside the feature list and sketch you already proposed, so that the sketch is informed by
 measurements rather than only by literature. This should run in parallel with the literature review,
 not after it.
+
+---
+
+## Appendix: pressure measurement
+
+### What pressure buys you, and why two sensors beat one
+
+The part is about **$35**, not the $15 an earlier version of this document claimed. Get it, and if
+the budget stretches, **get two.**
+
+Here is the honest accounting of what it adds. E1 and E2 do not need pressure at all: E1 calibrates
+velocity gravimetrically and E2 is the cosine law. E3 and E4 work without it but are much weaker
+without it, and one of them is arguably not measurable without it.
+
+**E3 gets cleaner.** Roller ripple is a pressure phenomenon. It reaches the Doppler only after
+passing through the loop and the whole audio chain, so the velocity trace is the attenuated, noisier
+view of it. Measuring it in pressure measures it at the source.
+
+**E4 needs it to produce a real number.** Compliance *is* a ratio of volume change to pressure
+change. Mapping syringe air volume to pulsatility index, as the experiment is written, gives you a
+useful curve that is specific to that one syringe and does not transfer to the real loop. Measure
+pressure and you get compliance in mL/mmHg, which is a property you can design the real compliance
+chamber against. That is the difference between a pilot result and a transferable one.
+
+**Why two.** The single most informative measurement available on this rig is pressure on *both*
+sides of the compliance chamber at once. That gives you the plenum's attenuation of the roller ripple
+directly, as a ratio in one run, which is the central design question for this group. With one sensor
+you have to move it and re-run, and then pump drift and setup changes are mixed into the comparison.
+Two sensors turn the key question into a single measurement. The Nano has eight analog inputs, so
+there is no cost beyond the part.
+
+Buy the **MPX5050GP** rather than the `DP` if you are ordering: single-port gauge, vented internally,
+and no exposed-die port to accidentally plumb fluid into. Electrically identical.
+
+### Build the water column regardless
+
+Not as a substitute. It does jobs the transducer does not.
+
+A clear vertical tube teed into the loop costs almost nothing. 1 mmHg is 13.6 mm of water:
+
+| Water column height | Pressure |
+|---|---|
+| 100 mm | 7.4 mmHg |
+| 500 mm | 36.8 mmHg |
+| 1.0 m | 73.6 mmHg |
+| 1.22 m | 90 mmHg |
+
+Three reasons it stays in the build. It is a **primary standard**, accurate to however well you read
+a tape measure, so it is what you calibrate the transducer's offset and span against rather than
+trusting a datasheet with 2.5% full-scale error. It reads **mean pressure** better than the
+transducer does, for the same reason. And because an open vertical tube physically cannot exceed its
+own height, it is the **pressure relief that protects a wall-less cast block** from a pump that can
+otherwise deliver 20 psi into it.
+
+What it will not give you is a waveform. The column is a damped resonator with its own natural
+frequency, so do not read pulse pressure off how far the meniscus bounces. That is the transducer's
+job, and it is why you want both.
+
+### The trap at this price point
+
+Searching for a cheap pressure sensor turns up $4 modules built around the **HX710B** (or HX710A).
+Do not buy these for this application. They are 24-bit and well made, but they sample at **40 SPS**
+(10 SPS for the A version). At 40 SPS a 1.2 Hz beat gets about four samples on the systolic upstroke,
+the dicrotic notch smears away entirely, and anything above 20 Hz aliases. The roller ripple we care
+about in E3 lands at 6 to 25 Hz, so the cheap module fails precisely the one experiment where
+pressure would help most. Resolution is not the specification that matters here. Bandwidth is.
+
+If the budget later argues against $35, the better cheap route is a surplus clinical arterial-line
+transducer, which is purpose-built for liquid contact and has flat response far past cardiac
+harmonics. It is a raw Wheatstone bridge at roughly 5 uV/V/mmHg, so it needs excitation and an
+instrumentation amplifier (INA125 class) rather than connecting straight to an ADC. More build
+effort, better instrument.
+
+### Which part, and the one trap in it
+
+The `DP` suffix means **dual port, differential**. You want gauge pressure, so leave the second port
+(P2, the back side) open to room air and apply pressure only to P1. The trap: on the differential
+parts, **only the P1 face has the protective gel die coat.** The P2 side is bare silicon. Get fluid
+into P2 and the sensor is finished. If you are ordering rather than using one already in the lab,
+the **MPX5050GP** is the better part: single port, vented internally, no wrong hole to plumb into.
+
+Either way the electrical side below is identical.
+
+### Pinout
+
+Six-pin SIP, Case 867B. **Pin 1 is the one next to the notch in the side of the package.** Getting
+this backwards puts 5 V into the output pin.
+
+| Pin | Function | Connect to |
+|---|---|---|
+| 1 | Vout | sense line (see below) |
+| 2 | GND | ground |
+| 3 | Vs | +5 V |
+| 4, 5, 6 | no connection | leave open |
+
+### Circuit
+
+Straight out of the datasheet's recommended configuration. Four passives, no amplifier.
+
+```
+  +5V ---+------------------- pin 3 (Vs)
+         |
+        1uF
+         |
+  GND ---+------------------- pin 2 (GND)
+
+  pin 1 (Vout) ---[ 750R ]---+--- A0
+                             |
+                           0.01uF
+                             |
+                            GND
+```
+
+The 1 uF goes physically close to the sensor, not at the far end of the breadboard. The 750 ohm and
+0.01 uF form a low-pass corner near 21 kHz, which is far above anything you care about and is there
+to keep switching noise out of the ADC.
+
+### Arduino, and why not the Pico
+
+**Use the Arduino.** The sensor is a 5 V part with a ratiometric output, meaning its output is a
+fixed *fraction* of its supply rather than a fixed voltage. Read it with an ADC referenced to that
+same 5 V rail and the supply voltage cancels out of the arithmetic completely. You get that for free
+on a 5 V board: sensor to A0, nothing in between.
+
+A Pico's ADC tops out at 3.3 V and its pins are not 5 V tolerant, so a 4.7 V full-scale output would
+damage it. You would need a divider on the output, and then the sensor runs off VBUS while the ADC
+references 3.3 V, so the two no longer cancel. Every sag in USB bus voltage becomes a pressure
+error. The Pico has the better ADC on paper and is the worse instrument here, and a Pico 2 does not
+fix it, because this is a reference problem and not a converter problem.
+
+**Do not use a Raspberry Pi.** It has no analog input at all, so you would be adding an external ADC
+anyway, and Linux will jitter your sample timing. A Pi is the right machine for logging and plotting
+the data, not for acquiring it.
+
+### The arithmetic
+
+The datasheet transfer function is `Vout = Vs * (0.018 * P + 0.04)` with P in kPa. Rearranged for a
+10-bit `analogRead()` on the default 5 V reference, where `N` is the raw count:
+
+```
+P_kPa  = ((N / 1023.0) - 0.04) / 0.018
+P_mmHg = 416.7 * ((N / 1023.0) - 0.04)
+```
+
+Sanity checks: at 0 kPa the output sits at 0.2 V, so `N` is about 41, not 0. Full scale is 4.7 V, so
+`N` tops out near 962 and not 1023. If your zero reads 0 counts, something is miswired.
+
+Resolution works out to about 0.4 mmHg per count, and `analogRead()` will give you several kHz if you
+want it. Both are far better than you need for a waveform with a 1 to 3 Hz fundamental. Sample at
+500 Hz or 1 kHz and you are done.
+
+### What this sensor is actually good for
+
+Read the accuracy spec carefully before you quote any absolute number. It is **2.5% of full scale**,
+and full scale here is 375 mmHg, so the absolute error is about **9 mmHg**. Our target pulse pressure
+is only 20 to 30 mmHg. Taken at face value that sounds disqualifying.
+
+It is not, because most of that error is static offset and span, and the thing you are measuring is a
+*shape*. Zero the sensor against room air at the start of every session and the offset drops out.
+What remains is linearity and span error acting on a 25 mmHg swing, which is small. So treat this
+sensor as a waveform and relative-change instrument, which is exactly what you need it for, and do
+not report a mean pressure to three digits from it.
+
+### One failure mode to recognize on sight
+
+The sensor connects to the loop through a short stub of tubing, and that stub has to be **short,
+stiff, and completely free of air.** An air bubble in the sense line makes a spring, which low-passes
+the pressure signal. The result is a trace that still looks like a plausible pressure waveform but
+with a soft upstroke and no dicrotic notch.
+
+So: **if the notch disappears, suspect a bubble in the sensor line before you suspect the pump.**
+Clinical arterial lines have exactly this problem and it fools experienced people regularly.

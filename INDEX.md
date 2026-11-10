@@ -128,7 +128,11 @@ ownership boundary plus the specs neither team sets alone.
 2. **SEBS versus PVA cryogel** for the brain block. SEBS is stable uncovered for over 6 months but
    measures 1470 and needs a glycerol sweep. PVA-C lands at 1536-1552 natively and gives tunable
    stiffness, but is water-based and needs 8 days of freeze-thaw cycling for the stiff end.
-3. **Wall-less versus walled vessel**, pending Group 1's burst test at MCA pressures. Nobody in this
-   literature has demonstrated wall-less at those velocities.
+3. **Wall-less versus walled vessel.** Group 1 is now proposing **wall-less at 3 mm**, so the
+   question narrows to whether it survives: nobody in this literature has demonstrated wall-less at
+   MCA velocities and pressures, and the gate is Group 1's tear-out test. Until that number exists,
+   Group 2's pressure ceiling is unknown. The fallback if it comes in low is a thin-walled compliant
+   tube cast into the block, with the acoustic penalty accepted and measured. See
+   `capstone/INTERFACE-CONTROL-DOCUMENT.md` for the coupling constraints this creates.
 4. **Skull analog material.** No printable homogeneous polymer reaches cortical bone. Roldan's resin
    was justified mechanically and never acoustically.
