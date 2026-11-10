@@ -26,6 +26,13 @@ FILES = ("config.py", "drive.py")
 # be imported there. secrets.py is gitignored and may legitimately not exist.
 OPTIONAL = ("net.py", "secrets.py")
 
+# A verification import is sub-second work. exec defaults to 600 s because it
+# also runs bench tests that go minutes between prints, and that default turned
+# a board failing its import into a terminal that simply sat there. A timeout
+# that long is indistinguishable from a hang, and the operator kills it before
+# it ever reports. Short here, and the message says what it means.
+VERIFY_WAIT = 25.0
+
 WIFI_PROBE = """
 try:
     import network
@@ -88,7 +95,8 @@ def main():
     pico = picolink.Pico(port)
     try:
         pico.enter_raw()
-        out, err = pico.exec("import sys\nprint(sys.implementation)")
+        out, err = pico.exec("import sys\nprint(sys.implementation)",
+                             wait=VERIFY_WAIT)
         if err.strip():
             raise SystemExit("board refused a plain print:\n" + err)
         ver = out.strip()
@@ -116,13 +124,13 @@ def main():
 
         # Wifi is a firmware question, not a software one, so answer it here
         # rather than letting net.py fail confusingly later.
-        out, _ = pico.exec(WIFI_PROBE)
+        out, _ = pico.exec(WIFI_PROBE, wait=VERIFY_WAIT)
         wifi = "WIFI|yes" in out
 
         # Drop the module cache before importing, or this verifies a file
         # on disk while the board keeps running the version it replaced.
         pico.fresh()
-        out, err = pico.exec(CHECK)
+        out, err = pico.exec(CHECK, wait=VERIFY_WAIT)
         if err.strip():
             raise SystemExit("drive.py did not import cleanly:\n" + err)
         lines = out.strip().splitlines()

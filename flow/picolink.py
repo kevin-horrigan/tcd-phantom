@@ -138,7 +138,16 @@ class Pico:
             if chunk.endswith(CTRL_D):
                 break
             if time.time() > deadline:
-                raise SystemExit("board still running after %.0f s, gave up" % wait)
+                raise SystemExit(
+                    "no end-of-output from the board after %.0f s, and %d "
+                    "bytes received. It is either still working or stuck.\n"
+                    "If this was an import, suspect PIO instruction memory: "
+                    "rp2.StateMachine() raises ENOMEM once PIO0's 32 slots "
+                    "are full, and a reload that does not free the old "
+                    "program fills them. Recover with\n"
+                    "  python picolink.py --port COMn eval \"__import__('rp2')"
+                    ".PIO(0).remove_program()\"\n"
+                    "or just replug the board." % (wait, len(out)))
         err = self.s.read_until(CTRL_D)
         self.s.read_until(b">")
         dec = lambda b: bytes(b).rstrip(CTRL_D).decode("utf-8", "replace")

@@ -87,6 +87,30 @@ def _step_n():
 
 _en = Pin(C.EN_PIN, Pin.OUT, value=1 if C.EN_ACTIVE_LOW else 0)
 _dir = Pin(C.DIR_PIN, Pin.OUT, value=0)
+# Importing this module a second time in one board session used to run PIO0
+# out of instruction memory. Dropping the module from sys.modules frees the
+# Python objects but NOT the assembled program, which stays loaded in the
+# block's 32 instruction slots, so every reload added another copy of
+# _step_n until a StateMachine() raised ENOMEM and nothing moved.
+#
+# That was caused by the module-cache fix, which is the ordinary shape of
+# this: one correctness fix uncovering the next. Reloading was impossible
+# before, so the leak had nowhere to show.
+#
+# The reclaim belongs HERE rather than in picolink's fresh(), because this
+# module is what loads the program and is therefore what has to free it.
+# Putting it in the host tool would only protect callers who go through the
+# host tool, and an import typed at the REPL goes through nothing.
+#
+# This claims PIO0 outright. Nothing else on this board uses it; anything
+# that starts to must take PIO1, or move this to a named program it can
+# remove selectively.
+try:
+    rp2.StateMachine(0).active(0)
+    rp2.PIO(0).remove_program()
+except Exception:
+    pass                      # first import of a fresh boot: nothing to free
+
 _sm = rp2.StateMachine(0, _step_n, freq=SM_CLOCK, set_base=Pin(C.STEP_PIN))
 _sm.active(1)
 
