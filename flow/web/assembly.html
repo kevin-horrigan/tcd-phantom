@@ -1,0 +1,387 @@
+<title>Waveform Generator Build</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  /* layout: full-height 3-D stage with a build rail on the right, stacking under it on phones */
+  :root {
+    --bg: #e9ecf0; --stage: #dfe4ea; --panel: #f6f8fa; --fg: #1b2026; --muted: #5d6874;
+    --line: #c9d1da; --accent: #a3253c; --accent-soft: #f0dde1; --ok: #2f6b53;
+    --font-display: "Space Grotesk", system-ui, sans-serif;
+    --font-body: "IBM Plex Sans", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #14181d; --stage: #11151a; --panel: #1b2026; --fg: #e3e8ee; --muted: #94a1b0;
+    --line: #2c343d; --accent: #e8687f; --accent-soft: #3a222a; --ok: #6cc29a; color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --bg: #14181d; --stage: #11151a; --panel: #1b2026; --fg: #e3e8ee; --muted: #94a1b0;
+    --line: #2c343d; --accent: #e8687f; --accent-soft: #3a222a; --ok: #6cc29a; color-scheme: dark }
+
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body);
+         display: flex; flex-direction: column; font-size: 15px; }
+  header { padding-block: 12px 10px;
+           padding-left: max(16px, env(safe-area-inset-left, 0px));
+           padding-right: max(16px, env(safe-area-inset-right, 0px));
+           border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap;
+           align-items: baseline; gap: 4px 14px; }
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.22rem; margin: 0;
+       letter-spacing: -.01em; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); font-size: .86rem; min-width: 0; }
+  header .tag { font-family: var(--font-mono); font-size: .74rem; color: var(--accent);
+                border: 1px solid var(--accent); border-radius: 3px; padding: 1px 6px; }
+
+  main { flex: 1; display: flex; min-height: 0; }
+  #stage { flex: 1; min-height: 300px; position: relative; touch-action: none;
+           background: var(--stage); min-width: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+  #hint { position: absolute; left: 14px; bottom: 12px; font-size: .78rem; color: var(--muted);
+          pointer-events: none; font-family: var(--font-mono); }
+  #badge { position: absolute; left: 14px; top: 12px; font-family: var(--font-mono);
+           font-size: .78rem; color: var(--muted); pointer-events: none; }
+
+  aside { width: 340px; flex: none; background: var(--panel); border-left: 1px solid var(--line);
+          overflow-y: auto; display: flex; flex-direction: column; gap: 18px;
+          padding-block: 16px 28px;
+          padding-left: max(16px, env(safe-area-inset-left, 0px));
+          padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  h2 { font-family: var(--font-mono); font-size: .7rem; text-transform: uppercase;
+       letter-spacing: .1em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+
+  .nav { display: flex; gap: 8px; align-items: center; }
+  button { font: inherit; font-size: .85rem; padding: 6px 11px; border-radius: 5px;
+           border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, input:focus-visible, li:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button[disabled] { opacity: .4; cursor: default; }
+  .nav .count { margin-left: auto; font-family: var(--font-mono); font-size: .8rem; color: var(--muted); }
+
+  #stepNo { font-family: var(--font-mono); font-size: .74rem; color: var(--accent); font-weight: 600; }
+  #stepName { font-family: var(--font-display); font-weight: 500; font-size: 1.04rem; margin: 3px 0 6px; }
+  #stepText { margin: 0; line-height: 1.52; font-size: .9rem; }
+
+  ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+  ol li { cursor: pointer; padding: 5px 7px; border-radius: 4px; display: flex; align-items: center;
+          gap: 8px; font-size: .86rem; border: 1px solid transparent; }
+  ol li:hover { background: var(--bg); }
+  ol li.now { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+  ol li.future { opacity: .45; }
+  ol li.off .nm { text-decoration: line-through; opacity: .5; }
+  .chip { width: 11px; height: 11px; border-radius: 2px; flex: none; border: 1px solid rgba(0,0,0,.25); }
+  .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mk { margin-left: auto; font-family: var(--font-mono); font-size: .68rem; color: var(--muted);
+        flex: none; letter-spacing: .04em; }
+
+  .row { display: flex; align-items: center; gap: 10px; font-size: .85rem; }
+  .row input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  .row output { width: 46px; text-align: right; font-family: var(--font-mono); font-size: .8rem;
+                font-variant-numeric: tabular-nums; color: var(--muted); }
+
+  #trace { width: 100%; height: 62px; display: block; border: 1px solid var(--line);
+           border-radius: 4px; background: var(--bg); }
+  .beatline { display: flex; justify-content: space-between; font-family: var(--font-mono);
+              font-size: .72rem; color: var(--muted); margin-top: 5px; }
+
+  dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: .84rem; }
+  dt { color: var(--muted); }
+  dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+       text-align: right; min-width: 0; }
+  .note { font-size: .8rem; color: var(--muted); line-height: 1.5; margin: 0; }
+
+  @media (max-width: 860px) {
+    main { flex-direction: column; }
+    #stage { flex: none; height: 46vh; min-height: 260px; }
+    aside { width: auto; border-left: none; border-top: 1px solid var(--line); overflow: visible; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+
+<header>
+  <h1>Waveform Generator Build</h1>
+  <span class="tag">TCD phantom &middot; group 2</span>
+  <p>The pulsatile piston drive, 14 parts, in the order they go together.</p>
+</header>
+
+<main>
+  <div id="stage">
+    <div id="badge">loading geometry&hellip;</div>
+    <div id="hint">drag to orbit &middot; scroll or pinch to zoom</div>
+  </div>
+
+  <aside>
+    <section>
+      <div class="nav">
+        <button id="prev" type="button">&larr;</button>
+        <button id="next" type="button">&rarr;</button>
+        <button id="all" type="button">Finished rig</button>
+        <span class="count" id="count"></span>
+      </div>
+      <div id="stepNo"></div>
+      <div id="stepName"></div>
+      <p id="stepText"></p>
+    </section>
+
+    <section>
+      <h2>The beat</h2>
+      <p class="note" style="margin:0 0 7px">Piston <strong>displacement</strong> over one beat at
+        60 bpm, not a velocity trace. This is where the plunger is: out by one beat volume while
+        it ejects, back to retracted while the gravity side refills.</p>
+      <canvas id="trace" width="620" height="124"></canvas>
+      <div class="beatline"><span id="beatPos">0.00 mm</span><span id="beatPhase">at rest</span></div>
+      <div class="row" style="margin-top:9px">
+        <button id="run" type="button">Run the beat</button>
+        <button id="cut" type="button">Cut away</button>
+      </div>
+      <p class="note" style="margin-top:8px">Stroke is drawn <strong>8&times;</strong> so it is
+        visible on a 300 mm rig. The real beat is <span id="beatMM"></span> of travel, 70 percent
+        of it inside 100 ms.</p>
+    </section>
+
+    <section>
+      <h2>Parts</h2>
+      <div class="row" style="margin-bottom:9px">
+        <label for="explode">Explode</label>
+        <input id="explode" type="range" min="0" max="100" value="0">
+        <output id="explodeOut">0</output>
+      </div>
+      <ol id="list"></ol>
+      <p class="note" style="margin-top:8px">Click any part to hide it. Click a step number to
+        rewind the build to that point.</p>
+    </section>
+
+    <section>
+      <h2>Numbers</h2>
+      <dl id="facts"></dl>
+    </section>
+  </aside>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(async function () {
+  const stage = document.getElementById("stage"), badge = document.getElementById("badge");
+  const css = getComputedStyle(document.documentElement);
+  const tok = n => css.getPropertyValue(n).trim();
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.localClippingEnabled = true;
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(36, 1, 1, 6000);
+  scene.add(new THREE.HemisphereLight(0xf2f6ff, 0x4a5058, 0.95));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(320, 620, 460); scene.add(sun);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.3); rim.position.set(-420, 180, -360); scene.add(rim);
+
+  // model is Z-up with +X from motor to tip; three is Y-up
+  const rig = new THREE.Group(); rig.rotation.x = -Math.PI / 2; scene.add(rig);
+
+  let data;
+  try { data = await (await fetch("assembly.json")).json(); }
+  catch (e) { badge.textContent = "could not load geometry"; return; }
+
+  const raw = atob(data.bin); data.bin = null;
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  const buf = bytes.buffer;
+
+  const clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 6);   // hides model +Y half
+  const items = [], list = document.getElementById("list");
+
+  data.parts.forEach(p => {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(buf, p.vOff, p.nV * 3), 3));
+    geo.setIndex(new THREE.BufferAttribute(new Uint32Array(buf, p.fOff, p.nF * 3), 1));
+    geo.computeVertexNormals();
+    const glass = p.name === "plunger" || p.name === "syringe barrel";
+    const mat = new THREE.MeshStandardMaterial({
+      color: p.color, roughness: p.printed ? 0.82 : 0.34, metalness: p.printed ? 0.0 : 0.55,
+      transparent: glass, opacity: glass ? 0.62 : 1, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.name = p.name;
+    rig.add(mesh);
+
+    const li = document.createElement("li");
+    li.tabIndex = 0;
+    li.innerHTML = '<span class="chip" style="background:' + p.color + '"></span>' +
+      '<span class="nm">' + (p.step + 1) + '. ' + p.name + '</span>' +
+      '<span class="mk">' + (p.printed ? "PRINT" : "BUY") + '</span>';
+    const toggle = () => { it.on = !it.on; li.classList.toggle("off", !it.on); draw(); };
+    li.addEventListener("click", ev => { if (ev.shiftKey) { setStep(p.step); } else { toggle(); } });
+    li.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(); } });
+    list.appendChild(li);
+
+    const it = { p, mesh, mat, li, on: true,
+                 explode: new THREE.Vector3(p.explode[0], p.explode[1], p.explode[2]) };
+    items.push(it);
+  });
+  badge.textContent = "";
+
+  // ---------------------------------------------------------------- facts
+  const f = data.facts, fl = document.getElementById("facts");
+  [["Bore area", f.bore.toFixed(1) + " mm²"],
+   ["Beat", f.beat_ml + " mL = " + f.beat_mm + " mm"],
+   ["Peak speed", f.rpm + " rpm"],
+   ["Resolution", f.step_ul + " µL/step"],
+   ["Travel", f.travel + " mm, " + f.soft + " usable"],
+   ["Dead volume", f.dead_ml + " mL"],
+   ["Screw", "Tr8x" + f.lead],
+   ["Barrel OD", f.barrel.toFixed(1) + " mm"],
+   ["Phase current", f.amps + " A, VREF " + f.vref + " V"],
+   ["Envelope", f.bbox[0] + " × " + f.bbox[1] + " × " + f.bbox[2] + " mm"]
+  ].forEach(([k, v]) => { fl.insertAdjacentHTML("beforeend", "<dt>" + k + "</dt><dd>" + v + "</dd>"); });
+  document.getElementById("beatMM").textContent = f.beat_mm + " mm";
+
+  // ---------------------------------------------------------------- steps
+  const N = items.length;
+  let step = N - 1, showAll = true, cut = false, running = false, phase = 0;
+  const elNo = document.getElementById("stepNo"), elName = document.getElementById("stepName"),
+        elText = document.getElementById("stepText"), elCount = document.getElementById("count");
+
+  function setStep(k) {
+    step = Math.max(0, Math.min(N - 1, k));
+    showAll = false;
+    document.getElementById("all").classList.remove("on");
+    paint();
+  }
+  function paint() {
+    const p = items[step].p;
+    elNo.textContent = "STEP " + (step + 1) + " OF " + N;
+    elName.textContent = p.name;
+    elText.textContent = p.text;
+    elCount.textContent = (showAll ? N : step + 1) + "/" + N + " shown";
+    items.forEach((it, i) => {
+      const built = showAll || i <= step;
+      it.li.classList.toggle("now", i === step);
+      it.li.classList.toggle("future", !built);
+      it.mat.emissive.setHex(i === step && !showAll ? 0x332024 : 0x000000);
+    });
+    document.getElementById("prev").disabled = step === 0;
+    document.getElementById("next").disabled = step === N - 1;
+    draw();
+  }
+  document.getElementById("prev").addEventListener("click", () => setStep(step - 1));
+  document.getElementById("next").addEventListener("click", () => setStep(step + 1));
+  document.getElementById("all").addEventListener("click", e => {
+    showAll = !showAll; e.currentTarget.classList.toggle("on", showAll); paint();
+  });
+  document.getElementById("cut").addEventListener("click", e => {
+    cut = !cut; e.currentTarget.classList.toggle("on", cut);
+    items.forEach(it => { it.mat.clippingPlanes = cut ? [clip] : []; it.mat.needsUpdate = true; });
+  });
+  document.getElementById("run").addEventListener("click", e => {
+    running = !running; e.currentTarget.classList.toggle("on", running);
+    if (!running) { phase = 0; strokeNow(0); }
+  });
+
+  // ---------------------------------------------------------------- motion
+  const explodeEl = document.getElementById("explode"), explodeOut = document.getElementById("explodeOut");
+  const MAG = 8.0;                                  // stroke exaggeration
+  let strokeMM = 0;
+  explodeEl.addEventListener("input", () => { explodeOut.value = explodeEl.value; draw(); });
+
+  function draw() {
+    const e = explodeEl.value / 100;
+    items.forEach((it, i) => {
+      it.mesh.visible = it.on && (showAll || i <= step);
+      it.mesh.position.set(it.explode.x * e, it.explode.y * e, it.explode.z * e);
+      if (it.p.moving) it.mesh.position.x += strokeMM * MAG;
+    });
+  }
+  function strokeNow(u) {
+    const prof = data.beat, n = prof.length;
+    const x = u * (n - 1), i = Math.floor(x), fr = x - i;
+    const y = prof[i] + (prof[Math.min(n - 1, i + 1)] - prof[i]) * fr;
+    strokeMM = y * f.beat_mm;
+    document.getElementById("beatPos").textContent = strokeMM.toFixed(2) + " mm";
+    const upFrac = (f.upstroke_ms / 1000) / (60 / f.hr);
+    document.getElementById("beatPhase").textContent =
+      !running ? "at rest"
+      : u < upFrac ? "systolic upstroke"
+      : u < f.eject ? "late ejection"
+      : "refill";
+    trace(u);
+    draw();
+  }
+
+  // ------------------------------------------------------------ waveform
+  const cv = document.getElementById("trace"), cx = cv.getContext("2d");
+  function trace(u) {
+    const w = cv.width, h = cv.height, pad = 7, prof = data.beat;
+    cx.clearRect(0, 0, w, h);
+    cx.strokeStyle = tok("--line"); cx.lineWidth = 1;
+    cx.beginPath(); cx.moveTo(0, h - pad); cx.lineTo(w, h - pad); cx.stroke();
+    cx.strokeStyle = tok("--accent"); cx.lineWidth = 2.5; cx.beginPath();
+    prof.forEach((y, i) => {
+      const X = i / (prof.length - 1) * w, Y = h - pad - y * (h - 2 * pad);
+      i ? cx.lineTo(X, Y) : cx.moveTo(X, Y);
+    });
+    cx.stroke();
+    if (u != null) {
+      const X = u * w;
+      cx.strokeStyle = tok("--fg"); cx.lineWidth = 1.5;
+      cx.beginPath(); cx.moveTo(X, 0); cx.lineTo(X, h); cx.stroke();
+    }
+  }
+
+  // ---------------------------------------------------------------- orbit
+  const target = new THREE.Vector3(data.center[0], data.center[2], -data.center[1]);
+  let theta = -0.75, phi = 1.15, dist = data.span * 2.0, dragging = false, lx = 0, ly = 0, pinch = 0;
+  function place() {
+    camera.position.set(
+      target.x + dist * Math.sin(phi) * Math.sin(theta),
+      target.y + dist * Math.cos(phi),
+      target.z + dist * Math.sin(phi) * Math.cos(theta));
+    camera.lookAt(target);
+  }
+  const el = renderer.domElement;
+  el.addEventListener("pointerdown", e => { dragging = true; lx = e.clientX; ly = e.clientY; el.setPointerCapture(e.pointerId); });
+  el.addEventListener("pointermove", e => {
+    if (!dragging) return;
+    theta -= (e.clientX - lx) * 0.006;
+    phi = Math.min(2.85, Math.max(0.3, phi - (e.clientY - ly) * 0.006));
+    lx = e.clientX; ly = e.clientY;
+  });
+  el.addEventListener("pointerup", e => { dragging = false; });
+  el.addEventListener("pointercancel", () => { dragging = false; });
+  el.addEventListener("wheel", e => {
+    e.preventDefault();
+    dist = Math.min(data.span * 6, Math.max(data.span * 0.5, dist * (1 + e.deltaY * 0.0012)));
+  }, { passive: false });
+  el.addEventListener("touchmove", e => {
+    if (e.touches.length === 2) {
+      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                           e.touches[0].clientY - e.touches[1].clientY);
+      if (pinch) dist = Math.min(data.span * 6, Math.max(data.span * 0.5, dist * pinch / d));
+      pinch = d;
+    }
+  }, { passive: true });
+  el.addEventListener("touchend", () => pinch = 0);
+
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage);
+  resize();
+
+  const clock = new THREE.Clock();
+  (function tick() {
+    requestAnimationFrame(tick);
+    if (running) {
+      phase = (phase + clock.getDelta() * (f.hr / 60)) % 1;
+      strokeNow(phase);
+    } else { clock.getDelta(); }
+    place();
+    renderer.render(scene, camera);
+  })();
+
+  trace(null);
+  paint();
+  document.getElementById("all").classList.add("on");
+})();
+</script>
