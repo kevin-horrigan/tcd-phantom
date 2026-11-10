@@ -386,6 +386,41 @@ check("clamp does not foul the carriage, the frame or the saddle",
       < 1e-6,
       "0 mm3 of overlap with the carriage it bolts to")
 
+# ---- the motor, which is about to be swapped for the team's ----
+# VREF is not a property of the driver. 0.556 V on the pot was derived for the
+# pancake, and the same setting on a different motor can be anywhere between
+# fine and over its rated current. These run against whichever motor MOTOR
+# names, so a swap re-answers them instead of inheriting the old answer.
+_mp = S.MOTORS[S.MOTOR]
+check("phase current is within the fitted motor's rating",
+      S.SET_I <= _mp["i"],
+      "%.3f A set against a %.1f A motor, %.0f%% of rated"
+      % (S.SET_I, _mp["i"], 100 * S.SET_I / _mp["i"]))
+
+_kt = _mp["th"] / (2.0 ** 0.5 * _mp["i"])
+_ceiling = S.DRIVE_V / _kt * 60.0 / (2 * 3.14159265)
+check("fitted motor can reach the speed the piston needs",
+      _ceiling > S.PEAK_RPM * 1.5,
+      "%s ceiling %.0f rpm at %.0f V, piston needs %.0f, margin %.1fx"
+      % (S.MOTOR, _ceiling, S.DRIVE_V, S.PEAK_RPM, _ceiling / S.PEAK_RPM))
+
+_w = S.PEAK_RPM * 2 * 3.14159265 / 60.0
+_head = S.DRIVE_V - S.SET_I * _mp["r"] - _kt * _w
+_trev = 2.0 * _mp["l"] * S.SET_I / _head if _head > 0 else 9e9
+_budget = 1.0 / (2 * S.PEAK_RPM / 60.0 * 50)
+check("phase reverses inside the beat on the fitted motor",
+      _trev < _budget / 2.0,
+      "%.2f ms to reverse against a %.2f ms budget, margin %.1fx"
+      % (_trev * 1e3, _budget * 1e3, _budget / _trev))
+
+check("every motor in the table is either complete or deliberately blank",
+      all(all(v is None for k, v in m.items() if k != "note")
+          or all(v is not None for k, v in m.items() if k != "note")
+          for m in S.MOTORS.values()),
+      "%d motors listed, %d with full nameplates"
+      % (len(S.MOTORS),
+         sum(1 for m in S.MOTORS.values() if m["th"] is not None)))
+
 print("\n%d check(s) failed" % len(fails) if fails else "\nall checks passed")
 
 # ------------------------------------------------------------------ render

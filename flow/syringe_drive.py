@@ -53,7 +53,42 @@ MOTOR_BOSS_D, MOTOR_BOSS_DEEP = 22.5, 2.5
 # runs the PANCAKE. Both mount the same face, but the 59 Ncm motor's own
 # back-EMF reaches 9.7 V at 446 rpm and its 12 V ceiling is 549 rpm, so it
 # cannot be driven at piston speed on the supply we have. See MOTOR below.
-MOTOR_TH, MOTOR_I, MOTOR_R, MOTOR_L = 0.17, 1.0, 3.6, 4.00e-3
+# Kevin is switching to the team's motor when it arrives, so this stops being
+# four loose constants and becomes a table with a chooser. Swapping motors is
+# then one line, and everything downstream recomputes instead of being
+# inherited: torque, the 12 V speed ceiling, the phase reversal margin, and
+# whether the VREF now on the pot is even legal for the new motor.
+#
+# That last one is the point. VREF is NOT a property of the driver. 0.556 V
+# was derived for the pancake, and the same pot setting on a different motor
+# can be anywhere from fine to over its rated current. A motor swap is a
+# current decision, not a mechanical one, and the check below enforces it.
+#
+# th Ncm holding, i A/phase rated, r ohm/phase, l H/phase, body mm.
+MOTORS = {
+    "17HE08-1004S": dict(th=0.17, i=1.0, r=3.6, l=4.00e-3, body=23.0,
+                         note="pancake. On the bench, turning, MS=8 confirmed"),
+    "17HS19-2004S1": dict(th=0.59, i=2.0, r=1.4, l=3.00e-3, body=48.0,
+                          note="bought. 3.5x the torque and 1.7x the back-EMF, "
+                               "so it is the SLOWER motor on a 12 V supply"),
+    # The team's motor. Copy its NAMEPLATE here before the swap, do not guess
+    # and do not leave these at the pancake's numbers. Holding torque and
+    # rated current are on the label; R and L are on the datasheet. Until
+    # they are real this entry will fail its own checks, which is intended.
+    "team-motor": dict(th=None, i=None, r=None, l=None, body=None,
+                       note="UNKNOWN. Fill from the nameplate before fitting"),
+}
+MOTOR = "17HE08-1004S"
+
+_m = MOTORS[MOTOR]
+if _m["th"] is None:
+    raise SystemExit(
+        "MOTOR is %r and its nameplate has not been entered. Fill in "
+        "MOTORS[%r] from the label before running anything: the phase "
+        "current, the speed ceiling and the reversal margin all depend on it."
+        % (MOTOR, MOTOR))
+MOTOR_TH, MOTOR_I = _m["th"], _m["i"]
+MOTOR_R, MOTOR_L = _m["r"], _m["l"]
 DRIVE_V = 12.0
 # Phase current, A rms. Not a free choice: it is pinned between two limits
 # from opposite directions. Above roughly 0.45 A the phase cannot reverse
