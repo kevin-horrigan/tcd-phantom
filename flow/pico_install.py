@@ -101,6 +101,13 @@ def main():
             print("  uploaded %s, %d bytes" % (name, n))
         for f in OPTIONAL:
             src = os.path.join(HERE, "pico", f)
+            # A placeholder secrets.py is worse than none: net.serve() then
+            # fails at the radio with a wrong-password timeout, which is the
+            # one failure that looks like a hardware problem.
+            if f == "secrets.py" and os.path.exists(src):
+                if "your-2.4GHz-network" in open(src, encoding="utf-8").read():
+                    print("  skipped secrets.py, still the unedited template")
+                    continue
             if os.path.exists(src):
                 name, n = pico.put(src, f)
                 print("  uploaded %s, %d bytes" % (name, n))

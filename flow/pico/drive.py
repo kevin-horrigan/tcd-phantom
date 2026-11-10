@@ -172,7 +172,11 @@ def _burst(steps, sps):
         clipped += 1
     cnt, real = _count(sps)
     if cnt is None:
-        return 0
+        # Used to return 0 here. A move that silently does nothing and
+        # reports success is the worst failure this file could have: the
+        # caller updates its idea of position, the volume is wrong, and
+        # there is no symptom. Non-negotiable that this is loud.
+        raise ValueError("step rate %.3f is not a rate. Nothing moved." % sps)
 
     if d != _dir_now:
         _wait_idle()
@@ -386,6 +390,79 @@ def selftest(revs=0.5, rpm=30.0):
     print("")
     print("Which way did it turn, seen from the shaft end? I need that for")
     print("DIR_ADVANCE once the screw is fitted. Then: drive.back()")
+
+
+def diag(revs=0.25):
+    """Split "nothing moved" into software or bench, without a meter.
+
+    Three stages, narrowing each time. Run it when the motor is silent and
+    the console shows no error, which is the case where guessing is most
+    tempting and least useful.
+
+    1. What the pins are actually doing. EN low means the driver is enabled.
+    2. Whether the PIO state machine consumes what it is handed. If the
+       FIFO never drains, the step train was never generated and nothing
+       about the motor, the wiring or the supply is implicated yet.
+    3. A step train bit-banged straight from Python with PIO switched off.
+       This is the decisive one, because it bypasses every line of PIO code
+       in this file. If the shaft moves here and not under selftest, the
+       fault is mine. If it moves under neither, the fault is on the bench
+       and it is VM, the motor connector, or the STEP or EN wire.
+
+    Slow and short: a quarter turn at about 200 steps/s, which is audible.
+    """
+    print("EN  pin %d reads %d  (active low, so 0 = driver enabled)"
+          % (C.EN_PIN, _en.value()))
+    print("DIR pin %d reads %d" % (C.DIR_PIN, _dir.value()))
+    print("")
+
+    print("1. does PIO consume what it is given?")
+    enable(True)
+    cnt, _ = _count(400.0)
+    _sm.put(49)
+    _sm.put(cnt)
+    t0 = time.ticks_us()
+    while _sm.tx_fifo() and time.ticks_diff(time.ticks_us(), t0) < 200000:
+        pass
+    if _sm.tx_fifo():
+        print("   NO. The FIFO still holds %d words after 200 ms, so the state"
+              % _sm.tx_fifo())
+        print("   machine is not running. That is a software fault on this")
+        print("   board and nothing to do with the motor or the supply.")
+        off()
+        return False
+    print("   yes, FIFO drained in %d us. The step train is being generated."
+          % time.ticks_diff(time.ticks_us(), t0))
+    time.sleep_ms(300)
+
+    print("")
+    print("2. bit-banged step train, PIO switched off entirely")
+    n = int(revs * C.STEPS_PER_REV)
+    print("   %d pulses at about 200/s, roughly %.2f of a turn, %.1f s."
+          % (n, revs, n / 200.0))
+    print("   WATCH AND LISTEN TO THE SHAFT.")
+    _sm.active(0)
+    try:
+        st = Pin(C.STEP_PIN, Pin.OUT, value=0)
+        for _ in range(n):
+            st.value(1)
+            time.sleep_us(50)
+            st.value(0)
+            time.sleep_us(4950)
+    finally:
+        _sm.active(1)
+        off()
+    print("")
+    print("   moved     -> the bench is fine and the PIO path is the problem.")
+    print("                Tell me; that is mine to fix.")
+    print("   did not   -> the bench. In order of likelihood: 12 V not on")
+    print("                after the motor was connected, the motor")
+    print("                connector, then the STEP or EN wire. A coil pair")
+    print("                split across A and B buzzes rather than sitting")
+    print("                silent, so silence points at power, not wiring.")
+    print("   held firm but did not turn -> VM is present and the driver is")
+    print("                enabled, so pulses are not reaching it: STEP wire.")
+    return True
 
 
 def back(revs=0.5, rpm=30.0):
