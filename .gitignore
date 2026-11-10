@@ -31,3 +31,11 @@ __pycache__/
 .venv/
 venv/
 .ipynb_checkpoints/
+
+# Slicer output is derived: regenerate with flow/slice_print.py from the STL plus the
+# profiles in flow/gcode/*.json. The frame alone is 3.7 MB of toolpath and it changes
+# with every nozzle, layer height or filament choice, so it does not belong in history.
+*.gcode
+*.3mf
+# OrcaSlicer CLI drops this next to the output when it cannot make a thumbnail
+[0-9][0-9][0-9][0-9][0-9].log

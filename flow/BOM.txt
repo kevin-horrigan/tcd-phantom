@@ -1,0 +1,82 @@
+WAVEFORM GENERATOR, COMPLETE BILL OF MATERIALS
+Screw span 113 mm, so screw 125 mm and rods 123 mm.
+
+PRINTED PARTS
+  [BUY  ]  1 x frame                    182 x 81 x 59 mm, 162 mL
+           plate 1, no measurement needed
+  [BUY  ]  1 x saddle_cap               clamps the collars
+           plate 1
+  [BUY  ]  2 x collar                   16.0 mm OD, bore to the barrel
+           plate 2, needs the barrel OD
+  [BUY  ]  1 x carriage                 LM8UU bores + T8 nut pocket
+           plate 2, needs the three plunger numbers
+
+MOTION HARDWARE, none of it in hand
+  [BUY  ]  1 x T8x8 lead screw          8 mm lead, cut to 125 mm
+           8 mm PER REV, not 2 mm. T8x2 is far more common and wrong here
+  [BUY  ]  1 x anti-backlash T8 nut     spring preloaded, flanged
+           a plain nut gives 0.2 mm lost motion, 2 to 5% of the beat
+  [BUY  ]  2 x 8 mm smooth rod          hardened, 123 mm
+  [BUY  ]  2 x LM8UU linear bearing     15 mm OD x 24 mm
+  [BUY  ]  1 x 608 bearing              8 x 22 x 7, skate bearing
+           takes the screw's far end in the rib
+  [BUY  ]  1 x flexible coupler         5 mm to 8 mm, 19 mm OD x 25 mm
+           5 mm is the pancake shaft, 8 mm is the screw
+
+MOTORS
+  [HAVE ]  1 x 17HE08-1004S pancake     NEMA 17, 23 mm, 17 Ncm, 1.0 A
+           this is the one that runs the piston
+  [HAVE ]  1 x 17HS19-2004S1            NEMA 17, 48 mm, 59 Ncm, 2.0 A
+           bought, but too slow at 12 V. Spare
+
+ELECTRONICS
+  [HAVE ]  1 x Raspberry Pi Pico 2      RP2350, MicroPython 1.29.0
+           flashed and verified, PIO step train measured to 0.03%
+  [HAVE ]  1 x breakout board           for the Pico
+  [HAVE ]  1 x BTT TMC2209 V1.3         0.11 ohm sense, VREF 0.53 V
+           wired and turning. Pot still at factory 1.2 V
+  [HAVE ]  1 x 12 V supply              2 A or better, 5.5 x 2.5 barrel
+           the motor ran off it
+  [CHECK]  1 x 100 uF electrolytic      25 V or better, low ESR
+           across VM and GND AT the driver. Protects it on motor transients
+  [CHECK]  1 x barrel jack pigtail      5.5 x 2.5 socket to flying leads
+           only if the brick is not already pigtailed
+  [CHECK]  7 x jumper wires             female to female, 100 mm
+           5 signal plus 2 power. Motor and VM want thicker wire
+
+SYRINGE
+  [HAVE ] 100 x BH Supplies BH5LL        5 mL luer lock, no needle, sterile
+           bought 2026-11-09. Halved the screw speed, 446 -> 230 rpm, which retired most of the motor problem
+
+FLUID INTERFACE, strictly the loop's but it breaks without these
+  [BUY  ]  1 x check valve              Qosina 9105x, 0.03 to 0.07 psi, barbed
+           THE ONE TO GET RIGHT. The luer-to-luer part cracks at 0.433 psi and stops the loop dead. See head_budget.py
+  [BUY  ]  1 x tee                      barbed, to the loop tubing size
+           piston tees in between the check valve and the phantom
+  [BUY  ]  2 x barb to female luer adapter to the loop tubing
+           the syringe tip is luer, the loop is barbed
+
+FASTENERS AND CONSUMABLES
+  [BUY  ]  4 x M3 x 8 cap screw         motor face to the motor plate
+  [BUY  ]  4 x M3 x 10 cap screw        nut flange to the carriage
+           plus nuts, or self tap into the print
+  [BUY  ]  4 x zip tie                  2.5 to 3 mm wide
+           through the saddle slots, clamps the collars
+
+HAVE   7 line items, 106 pieces   already on the bench
+CHECK  3 line items,   9 pieces   probably here, confirm
+BUY   16 line items,  29 pieces   has to be ordered or printed
+
+THE SHORT VERSION OF WHAT IS MISSING
+  Every moving part. The frame, carriage, collars and cap are not
+  printed yet, and not one piece of the motion hardware is here:
+  no screw, no nut, no rods, no LM8UU, no 608, no coupler. The
+  electronics are done and proven, the mechanism does not exist.
+
+  Two items decide whether the rig works at all rather than
+  merely existing, and both are easy to order wrong:
+    T8x8 lead screw.  T8x2 looks identical and is sold far more
+                      often. At a 2 mm lead the same beat needs
+                      919 rpm, which no 12 V NEMA 17 will do.
+    Qosina 9105x check valve.  The luer-to-luer alternative cracks
+                      at 0.433 psi, which is the entire head.
