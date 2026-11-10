@@ -421,7 +421,10 @@ check("every motor in the table is either complete or deliberately blank",
       % (len(S.MOTORS),
          sum(1 for m in S.MOTORS.values() if m["th"] is not None)))
 
-print("\n%d check(s) failed" % len(fails) if fails else "\nall checks passed")
+# The tally used to print here, which put it AHEAD of the checks appended
+# below it, so a failure in those was printed as FAIL and then tallied as
+# "all checks passed" on the same run. A summary that is not last is not a
+# summary. It now runs at the end of the file.
 
 # ------------------------------------------------------------------ render
 fig = plt.figure(figsize=(13.0, 5.6), dpi=170)
@@ -477,3 +480,57 @@ check("printed frame: the measured flange still seats against the rib",
       "rib placed for %.1f mm, flange measures %.1f mm, %.1f mm of axial "
       "slack taken up by the straps"
       % (S.FRAME_FLANGE_T, S.SYR_FLANGE_T, S.FRAME_FLANGE_T - S.SYR_FLANGE_T))
+
+
+# ------------------------------------------------------- the T8 nut interface
+# The nut bolts the screw to the carriage, so its mounting face carries every
+# newton the piston makes. carriage() cuts the brass pattern: four M3 on a
+# 16 mm bolt circle. The part on order is the POM spring-loaded nut, whose
+# listing gives the flange diameter and then stops. This is the saddle-bore
+# situation with the escape hatch removed, because a bolt circle cannot be
+# drawn loose: either the holes coincide or the nut does not mount.
+_nut = S.NUTS[S.NUT]
+check("fitted nut interface measured before the carriage prints",
+      not S.NUT_UNKNOWN,
+      "nut '%s' unmeasured: %s. carriage() is cut for '%s'"
+      % (S.NUT, ", ".join(S.NUT_UNKNOWN), S.NUT_CUT_FOR)
+      if S.NUT_UNKNOWN else
+      "'%s' measured and carriage() cut for '%s'" % (S.NUT, S.NUT_CUT_FOR))
+
+# Lead is the one nut number the listing does state, and the only one the
+# firmware depends on. A "T8" sold with a 2 mm lead instead of 8 would deliver
+# a quarter of every commanded volume, and nothing on a scope would look wrong
+# because the step train would be exactly as asked for.
+check("ordered nut's lead matches what the firmware is scaled to",
+      S.SCREW_LEAD == 8.0,
+      "8 mm lead, 2 mm pitch, 4 start on the ordered part; 1600 microsteps "
+      "per rev over %.0f mm is %.0f steps/mm"
+      % (S.SCREW_LEAD, 1600.0 / S.SCREW_LEAD))
+
+# These two only run once the nut is in hand. The gate above is what fails
+# while they cannot run, so nothing passes by being unmeasurable.
+if _nut["body_d"] is not None:
+    check("nut body clears the carriage bore",
+          _nut["body_d"] <= S.NUT_BODY_D + 2 * S.FIT,
+          "body %.1f mm into a %.1f mm bore"
+          % (_nut["body_d"], S.NUT_BODY_D + 2 * S.FIT))
+if _nut["spring_od"] is not None:
+    # The spring is what makes it anti-backlash, and it has to live somewhere.
+    # Inside the carriage it needs the body bore; outside it eats travel.
+    check("nut spring clears the carriage bore, or is outboard",
+          _nut["spring_od"] <= S.NUT_BODY_D + 2 * S.FIT,
+          "spring OD %.1f mm against a %.1f mm bore; if it fouls, the spring "
+          "stack mounts on the motor side and costs that much travel"
+          % (_nut["spring_od"], S.NUT_BODY_D + 2 * S.FIT))
+if _nut["flange_t"] is not None:
+    check("nut flange seats in its counterbore",
+          _nut["flange_t"] <= S.NUT_FLANGE_T + S.FIT,
+          "flange %.1f mm into a %.2f mm counterbore"
+          % (_nut["flange_t"], S.NUT_FLANGE_T + S.FIT))
+
+if fails:
+    print("\n%d check(s) failed:" % len(fails))
+    for f in fails:
+        print("  - %s" % f)
+else:
+    print("\nall checks passed")

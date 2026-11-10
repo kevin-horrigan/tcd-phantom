@@ -113,8 +113,56 @@ M3 = 3.4                             # M3 clearance
 SCREW_LEAD = 8.0                     # Tr8x8
 SCREW_ROOT_D = 6.2                   # for the whip calculation
 BEAR_OD, BEAR_W = 22.0, 7.0          # 608
+# ---------------------------------------------------------------- the T8 nut
+# The nut is the joint between the screw and the carriage, so its mounting
+# face is the one interface on this machine that a 98 minute print cannot get
+# wrong and still be worth anything. Holes either line up or the nut cannot be
+# fitted at all, and unlike the saddle bore there is no loose default to hide
+# behind: a bolt circle is not a dimension you can draw generously.
+#
+# Two different parts are sold as "T8 anti-backlash nut". The brass one has a
+# round 22 mm flange with FOUR M3 holes on a 16 mm bolt circle, and that is
+# the pattern carriage() cuts. The POM spring-loaded one is a different body
+# on a different flange, and the listing for the one on order (uxcell
+# a24113000ux0399, ASIN B0DSZ4YYFS) never states its hole pattern. Its
+# dimension block contradicts itself as well: "Nut Size: 15x14mm (L*W);
+# 15x22x11mm (L*W*H)" with inch conversions that fit neither triple, and an
+# attribute table calling the outside diameter 15 mm while the flange is 22.
+#
+# What that listing DOES settle is the number that mattered most: lead 8 mm,
+# pitch 2 mm, 4 start. That is the constant the whole firmware hangs on.
+#
+# So the geometry below stays the brass pattern, because that is the one that
+# has been checked, and the harness refuses to bless a carriage print while
+# the fitted nut's interface is still unmeasured.
+NUTS = {
+    "brass-std": dict(flange_t=3.5, bc=16.0, holes=4, body_d=10.6,
+                      body_l=15.0, spring_od=0.0,
+                      note="round 22 mm flange, 4 x M3 on a 16 mm bolt "
+                           "circle. What carriage() is drawn for and what "
+                           "every clearance here was checked against"),
+    "uxcell-pom": dict(flange_t=None, bc=None, holes=None, body_d=None,
+                       body_l=None, spring_od=None,
+                       note="uxcell a24113000ux0399 / B0DSZ4YYFS, POM spring "
+                            "loaded, lead 8 mm CONFIRMED on the listing. A "
+                            "22 mm flange is the only interface number "
+                            "stated, and it happens to match the brass one, "
+                            "which is encouraging and not proof. MEASURE: "
+                            "flange thickness, hole count, hole spacing or "
+                            "bolt circle, body diameter behind the flange, "
+                            "body length, spring OD"),
+}
+NUT = "uxcell-pom"                   # what is on order
+_nut = NUTS[NUT]
+NUT_UNKNOWN = sorted(k for k, v in _nut.items() if k != "note" and v is None)
+
+# What carriage() actually cuts. Deliberately the brass row rather than _nut,
+# so an unmeasured nut cannot quietly resize a print. When the fitted nut is
+# measured, fill its row in and point these four lines at _nut.
 NUT_FLANGE_D, NUT_FLANGE_T, NUT_BC = 22.0, 3.5, 16.0
+NUT_HOLES = 4
 NUT_BODY_D = 10.6
+NUT_CUT_FOR = "brass-std"
 
 # ------------------------------------------------------------------ guidance
 ROD_D, ROD_SPACING = 8.0, 56.0       # two 8 mm smooth rods, centre to centre
