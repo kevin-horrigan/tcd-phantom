@@ -47,6 +47,7 @@ ORIENT = [
     ("carriage",   (90.0, "y"), (0.30, 0.46, 0.60)),
     ("saddle_cap", (180.0, "x"), (0.62, 0.58, 0.52)),
     ("collar",     (90.0, "y"), (0.55, 0.42, 0.30)),
+    ("rod_clamp",  (180.0, "x"), (0.46, 0.38, 0.52)),
 ]
 AXES = {"x": (1, 0, 0), "y": (0, 1, 0), "z": (0, 0, 1)}
 
@@ -133,7 +134,8 @@ def main():
         m = oriented(parts[name], ang, axis)
         seen.append((name, m, col))
     for i, (name, m, col) in enumerate(seen):
-        bx = fig.add_subplot(4, 2, 2 * i + 2, projection="3d")
+        # Grid follows the part count, so adding a part does not crash this.
+        bx = fig.add_subplot(len(seen), 2, 2 * i + 2, projection="3d")
         shade(bx, m, col, view)
         ext = m.extents
         r = max(ext) / 2.0
@@ -167,25 +169,33 @@ def main():
     fits = widest <= BED and deepest <= BED
     print("\nlaid out %.0f x %.0f mm on a %.0f mm bed, %s"
           % (widest, deepest, BED, "fits" if fits else "DOES NOT FIT"))
-    # Split by what each part needs measured, not by what fits.
-    FREE = ("frame", "saddle_cap")                 # no syringe dimension at all
-    GATED = {"collar": "barrel OD",
-             "carriage": "disc dia, disc thickness, plunger rod dia"}
+    # Everything is measured now, so the old two-plate split by what was
+    # still unknown has nothing left to split on. What remains is an ORDER,
+    # and the order is by what each part proves before the next one commits.
+    QTY = {"collar": 2}
+    ORDER = [("collar", "6 min each. Proves the 0.10 mm snap grip on the "
+                        "barrel before anything long starts."),
+             ("rod_clamp", "9 min. Proves the tongue reaches the rod and the "
+                           "bolts bite, which is what lets the carriage stop "
+                           "depending on the disc."),
+             ("saddle_cap", "14 min. Independent of the syringe entirely."),
+             ("carriage", "1h 35m. Print it last, once the three above have "
+                          "confirmed the plunger interface.")]
     v = {n: parts[n].volume / 1000.0 for n in parts}
-    n_free = sum(v[n] for n in FREE)
-    print("\nTwo plates, split by what has to be measured first.\n")
-    print("  PLATE 1, start now. Nothing here depends on the syringe.")
-    for n in FREE:
-        print("    %-11s x1   %6.1f mL" % (n, v[n]))
-    print("    %-11s      %6.1f mL" % ("", n_free))
-    print("\n  PLATE 2, after the calipers. %.1f mL total." % (total - n_free))
-    for n, need in GATED.items():
-        k = 2 if n == "collar" else 1
-        print("    %-11s x%d   %6.1f mL   needs %s" % (n, k, v[n] * k, need))
-    print("\nThe frame is %.0f%% of the filament and the long print. It is also"
+    print("\nPrint order. Every syringe dimension is measured, so nothing is")
+    print("gated any more. What is left is cheap parts proving the interface")
+    print("before the expensive one commits 95 minutes to it.\n")
+    for n, why in ORDER:
+        k = QTY.get(n, 1)
+        print("    %-11s x%d   %6.1f mL   %s" % (n, k, v[n] * k, why))
+    print("    %-11s      %6.1f mL   DONE, off the bed 2026-11-10"
+          % ("frame", v["frame"]))
+    print("\nThe frame is %.0f%% of the filament and it is already printed."
           % (v["frame"] / total * 100.0))
-    print("the one part that cannot be scrapped by a wrong guess, which is why")
-    print("the barrel OD was moved out of it and into the collars.")
+    print("It is also the one part a wrong guess could have scrapped, which is")
+    print("why the barrel OD was moved out of it and into the collars. The")
+    print("barrel then measured 14.0 against a 12.5 estimate, so that decision")
+    print("is the reason there is a frame to print parts for at all.")
 
 
 if __name__ == "__main__":

@@ -96,7 +96,14 @@ SYR_BARREL_D = 14.0                  # barrel OD                   MEASURED
 DISC_D = 16.5                        # plunger thumb disc diameter MEASURED
 SYR_BARREL_L = 66.0                  # flange face to tip shoulder MEASURED
 SYR_FLANGE_T = 2.0                   # finger flange thickness     MEASURED
-DISC_T = 2.0                         # thumb disc thickness        MEASURED
+DISC_T = 1.71                        # thumb disc thickness     MICROMETER
+# Caliper read 1.9 and 2.0 on two syringes; a micrometer reads 1.71. The
+# caliper was not scattering, it was overreading, which is what a caliper does
+# on a thin moulded disc: the jaws span the raised rim or sit a degree out of
+# square, and both errors are one-signed. The two "different" readings were
+# one instrument being wrong by different amounts, not two discs differing.
+# Worth recording because the old pocket was drawn from 2.0 and would have
+# printed 2.16 around a 1.71 disc: 0.45 mm of slack, 54 uL, 11% of the beat.
 PLUNGER_ROD_D = 12.0                 # across the cross            MEASURED
 
 # Cross-check on the two measured numbers, because they constrain each other.
@@ -164,8 +171,41 @@ BASE_T, WALL_T = 6.0, 7.0
 RIB_T = BEAR_W + 2.0
 CARRIAGE_L = 30.0
 COUPLER_L = 25.0
-FRONT_W = 2.5                        # carriage wall in front of the disc pocket
+FRONT_W = 2.0                        # carriage wall in front of the disc pocket
 FIT = 0.35
+
+# The thumb disc measured 2.0 on one syringe and 1.9 on another. The pocket
+# that captures it used to be drawn at DISC_T + 0.4, which prints 2.16 after
+# the bridge droops, so the usable window was 1.96 to 2.16: below it the disc
+# rattles, above it the part will not assemble at all. Injection moulding does
+# not hold a lot to 0.2 mm, so that design asked the supplier for a tolerance
+# nobody promised, and 95 minutes of print rode on the answer.
+#
+# Worse, the slack it leaves is NOT removable by anything else in the drive.
+# The anti-backlash nut takes out the screw's share. The preload spring takes
+# out whatever is left between the frame and the carriage. Neither can touch
+# this one, because it sits between the carriage and the PLUNGER, downstream
+# of both. A spring pulling the carriage back seats the pocket's front face,
+# and systole then has to cross the whole gap to get the rear face onto the
+# disc, which is the worst possible place to spend it: the foot of the
+# upstroke. Once the anti-backlash nut is fitted this becomes the single
+# largest lost-motion term in the machine.
+#
+# So the pocket stops trying to be a fit. It is opened to swallow any disc in
+# the range below, and the slack is removed somewhere else entirely, by
+# clamping the plunger ROD to the carriage. The rod is 12 mm across and sits
+# in an open slot, so it is a big accessible target. The disc offers a 1.65 mm
+# annulus between the rod slot and its own rim, which is narrower than an M3
+# head, so nothing can usefully bear on it.
+DISC_T_MIN, DISC_T_MAX = 1.6, 2.4    # thumb discs the pocket must swallow
+ROD_D_MIN = 11.0                     # smallest rod the clamp must still reach
+M3_TAP = 2.6                         # self-tap pilot for M3 in PLA
+CLAMP_L, CLAMP_W, CLAMP_T = 14.0, 29.0, 5.0
+CLAMP_Y = 10.5                       # bolt centres, clear of the rod slot
+# Tongue reaches the TOP of the smallest rod we would accept, so the bar
+# always floats proud and the bolts do the clamping. Nothing is sized to a
+# measurement, which is the whole point of the part.
+CLAMP_TONGUE = DISC_D / 2.0 + 3.0 - ROD_D_MIN / 2.0 + 0.75
 # ------------------------------------------------- the beat, and what it costs
 # BH Supplies BH5LL, 5 mL luer lock, 100 pack. Bought 2026-11-09.
 #
@@ -263,7 +303,12 @@ X_CARR_FRONT = X_CARR_MAX + CARRIAGE_L               # front face, fully extende
 FRAME_FLANGE_T = 2.5                 # as built  <-- reprint required to change
 X_RIB = X_CARR_FRONT + FRAME_FLANGE_T + 1.5
 X_RIB_BACK = X_RIB + RIB_T
-X_DISC = X_CARR_FRONT - FRONT_W - DISC_T / 2         # disc at full extension
+# The disc sits against the pocket's REAR face, which is the one that bears
+# during systole, not against the front wall. With the pocket now opened to
+# swallow DISC_T_MAX, that rear face is where it is regardless of how thick
+# the disc turns out to be, so this no longer moves when a measurement does.
+X_POCKET_BACK = X_CARR_FRONT - FRONT_W - (DISC_T_MAX + 0.3)
+X_DISC = X_POCKET_BACK + DISC_T / 2                  # disc at full extension
 X_TIP = X_RIB_BACK + SYR_BARREL_L
 
 # The frame is PRINTED. It came off the bed on 2026-11-10 built to a guessed
@@ -468,17 +513,24 @@ def carriage():
                                 y=NUT_BC / 2 * np.cos(t),
                                 z=SCREW_H + NUT_BC / 2 * np.sin(t)))
 
-    # Plunger capture: open-top slot for the rod, closed pocket for the disc.
-    xd = CARRIAGE_L - FRONT_W - DISC_T / 2
+    # Plunger capture: open-top slot for the rod, and a disc pocket sized to
+    # SWALLOW the whole plausible disc range rather than to fit one reading.
+    # The pocket no longer carries the waveform. The rod clamp does.
+    xpf = CARRIAGE_L - FRONT_W                       # pocket front face
+    xpb = xpf - (DISC_T_MAX + 0.3)                   # rear face, bears on systole
     # The slot has to drop below the axis by a full rod radius, not stop at it.
-    body = diff(body, box((xd - 20.0, x1 + 1),
+    body = diff(body, box((xpb - 20.0, x1 + 1),
                           (-(PLUNGER_ROD_D / 2 + 0.6), PLUNGER_ROD_D / 2 + 0.6),
                           (SYR_H - PLUNGER_ROD_D / 2 - 0.6, z1 + 1)))
-    body = diff(body, cyl_x(DISC_D / 2 + 0.4,
-                            (xd - DISC_T / 2 - 0.2, xd + DISC_T / 2 + 0.2), z=SYR_H))
-    body = diff(body, box((xd - DISC_T / 2 - 0.2, xd + DISC_T / 2 + 0.2),
-                          (-(DISC_D / 2 + 0.4), DISC_D / 2 + 0.4),
+    body = diff(body, cyl_x(DISC_D / 2 + 0.4, (xpb, xpf), z=SYR_H))
+    body = diff(body, box((xpb, xpf), (-(DISC_D / 2 + 0.4), DISC_D / 2 + 0.4),
                           (SYR_H, z1 + 1)))
+
+    # Two self-tap bolt holes for the rod clamp, outboard of the rod slot and
+    # blind so the carriage keeps a solid top skin over them.
+    for dy in (-CLAMP_Y, CLAMP_Y):
+        body = diff(body, cyl_z(M3_TAP / 2, (z1 - 9.0, z1 + 1),
+                                x=xpb - 10.0, y=dy))
 
     # Lighten the web between the nut and the fork, and anchor the spring.
     for dy in (-24.0, 24.0):
@@ -487,6 +539,38 @@ def carriage():
     body = union(body, cyl_z(SPRING_POST_D / 2, (z1, z1 + 8.0),
                              x=x0 + 6.0, y=HALF_W - 8.0))
     return body
+
+
+def rod_clamp():
+    """Pins the plunger rod to the carriage, so no disc dimension matters.
+
+    A bar across the open rod slot with a tongue that reaches down onto the
+    rod. The tongue is deliberately LONGER than the gap to the largest rod we
+    would ever fit, so the bar always stands proud and the two M3 bolts do the
+    clamping. Nothing here is sized to a measurement. That is the entire
+    reason the part exists: the thumb disc read 1.9, then 2.0, then 1.71 on a
+    micrometer, and a 95 minute print should not depend on which of those is
+    right.
+
+    Friction, not form, carries the load. Hand tight on two M3 in PLA puts
+    roughly 20 N through the rod, and against polypropylene that is some 6 N
+    of axial grip, comfortably over the 1.5 N of seal friction plus 0.8 N of
+    hydraulic force the plunger actually sees. It also squares the rod in the
+    slot, removing the 0.6 mm of lateral play the slot otherwise allows.
+
+    Prints flat, tongue up, no supports.
+    """
+    xc = CARRIAGE_L - FRONT_W - (DISC_T_MAX + 0.3) - 10.0
+    bar = box((xc - CLAMP_L / 2, xc + CLAMP_L / 2),
+              (-CLAMP_W / 2, CLAMP_W / 2), (0.0, CLAMP_T))
+    tongue = box((xc - CLAMP_L / 2, xc + CLAMP_L / 2),
+                 (-(PLUNGER_ROD_D / 2 + 0.2), PLUNGER_ROD_D / 2 + 0.2),
+                 (-CLAMP_TONGUE, 0.0))
+    bar = union(bar, tongue)
+    for dy in (-CLAMP_Y, CLAMP_Y):
+        bar = diff(bar, cyl_z(M3 / 2, (-CLAMP_TONGUE - 1, CLAMP_T + 1),
+                              x=xc, y=dy))
+    return bar
 
 
 def saddle_cap():
@@ -510,6 +594,7 @@ def syringe():
 def build():
     return {"frame": frame(), "carriage": carriage(),
             "saddle_cap": saddle_cap(), "collar": collar(),
+            "rod_clamp": rod_clamp(),
             "fit_coupon": fit_coupon()}
 
 

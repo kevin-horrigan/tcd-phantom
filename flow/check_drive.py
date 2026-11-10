@@ -332,6 +332,60 @@ check("carriage stops short of the syringe finger flange",
       "carriage ends at %.1f, flange face at %.1f"
       % (ext.bounds[1][0], S.X_RIB - S.SYR_FLANGE_T))
 
+# ---- the rod clamp, and the pocket it made unnecessary to measure ----
+# The disc pocket used to be a fit. It is now a swallow: anything in the
+# declared range must drop in with clearance, and nothing in that range may
+# jam. Jamming is the expensive failure, because it is discovered after the
+# 95 minute print.
+_pocket = S.DISC_T_MAX + 0.3 - S.HOLE_SHRINK
+check("disc pocket swallows the whole declared disc range",
+      _pocket > S.DISC_T_MAX and S.DISC_T_MIN >= 1.5,
+      "pocket prints %.2f mm, accepts %.1f to %.1f mm. The micrometer says "
+      "%.2f" % (_pocket, S.DISC_T_MIN, S.DISC_T_MAX, S.DISC_T))
+
+check("measured disc is inside the range the pocket was built for",
+      S.DISC_T_MIN <= S.DISC_T <= S.DISC_T_MAX,
+      "%.2f mm sits %.2f mm above the floor and %.2f mm below the ceiling"
+      % (S.DISC_T, S.DISC_T - S.DISC_T_MIN, S.DISC_T_MAX - S.DISC_T))
+
+# The clamp only works if the tongue reaches the rod BEFORE the bar lands on
+# the carriage. If the bar bottoms out first the bolts tighten against the
+# carriage and the rod stays loose, which would look assembled and do nothing.
+_gap = S.DISC_D / 2.0 + 3.0 - S.PLUNGER_ROD_D / 2.0
+check("clamp tongue reaches the rod before the bar bottoms out",
+      S.CLAMP_TONGUE > _gap,
+      "tongue %.2f mm into a %.2f mm gap, so the bar stands %.2f mm proud on "
+      "the measured rod and the bolts do the clamping"
+      % (S.CLAMP_TONGUE, _gap, S.CLAMP_TONGUE - _gap))
+
+check("clamp still reaches a rod at the bottom of the declared range",
+      S.CLAMP_TONGUE > S.DISC_D / 2.0 + 3.0 - S.ROD_D_MIN / 2.0,
+      "reaches a %.1f mm rod with %.2f mm to spare"
+      % (S.ROD_D_MIN,
+         S.CLAMP_TONGUE - (S.DISC_D / 2.0 + 3.0 - S.ROD_D_MIN / 2.0)))
+
+_tongue_half = S.PLUNGER_ROD_D / 2.0 + 0.2
+_slot_half = S.PLUNGER_ROD_D / 2.0 + 0.6
+check("clamp tongue enters the rod slot without binding",
+      _tongue_half + S.HOLE_SHRINK / 2.0 < _slot_half,
+      "tongue %.1f mm wide in a slot that prints %.1f mm, %.2f mm total "
+      "clearance" % (2 * _tongue_half, 2 * _slot_half - S.HOLE_SHRINK,
+                     2 * (_slot_half - _tongue_half) - S.HOLE_SHRINK))
+
+check("clamp bolts miss the rod slot and stay inside the carriage",
+      S.CLAMP_Y - S.M3 / 2.0 > S.PLUNGER_ROD_D / 2.0 + 0.6
+      and S.CLAMP_W / 2.0 < S.HALF_W - 2.0,
+      "bolts at %.1f leave %.2f mm of wall to the slot edge, bar %.0f mm wide "
+      "inside a %.0f mm carriage"
+      % (S.CLAMP_Y, S.CLAMP_Y - S.M3 / 2.0 - (S.PLUNGER_ROD_D / 2.0 + 0.6),
+         S.CLAMP_W, 2 * (S.HALF_W - 2.0)))
+
+check("clamp does not foul the carriage, the frame or the saddle",
+      trimesh.boolean.intersection(
+          [parts["rod_clamp"], parts["carriage"]], engine="manifold").volume
+      < 1e-6,
+      "0 mm3 of overlap with the carriage it bolts to")
+
 print("\n%d check(s) failed" % len(fails) if fails else "\nall checks passed")
 
 # ------------------------------------------------------------------ render
