@@ -324,54 +324,73 @@ def run(hr=60.0, beats=10):
         print("no slice hit the rate ceiling, so the profile was played whole")
 
 
-def selftest(dist=None, rpm=30.0):
-    """One screw revolution out and back, slowly, with nothing in the way.
+def selftest(revs=0.5, rpm=30.0):
+    """Half a shaft revolution, forward, and STOP there. Then read the mark.
 
-    The distance defaults to SCREW_LEAD on purpose, so the command is worth
-    exactly one turn of the shaft. That makes this a TEST rather than a
-    demonstration: put a mark on the coupler or the shaft, run it, and the
-    mark has to come back to where it started. "It moved" proves the wiring.
-    "It moved exactly one revolution and returned" proves STEPS_PER_REV,
-    MICROSTEP, the PIO period arithmetic and STEPS_PER_MM all at once, which
-    is the whole chain between a millilitre in the model and a millilitre in
-    the barrel.
+    This does NOT come back, and that is the entire design of it.
 
-    If the mark lands short or long by a consistent fraction, suspect the
-    microstep setting before anything else: MS1/MS2 both grounded is 8 on a
-    TMC2209 and 16 on a TMC2208, and getting that wrong scales every volume
-    this machine will ever deliver by exactly two.
+    An out-and-back move cannot detect the error this test exists to catch.
+    If microstepping is really 16 rather than the 8 the config assumes, the
+    shaft turns half as far out and half as far back and returns to exactly
+    where it started, looking perfect. The return leg cancels precisely the
+    fault being hunted. An earlier version of this function did that, and was
+    a demonstration dressed as a test.
 
-    Safe on a bare motor with no mechanism attached, which is what it is for.
+    Watching a mid-move pause would work, but hangs a correctness check on a
+    human catching a 600 ms window, which is a bad place to put it. Stopping
+    instead costs nothing and the evidence then sits still to be read.
+
+    Mark the shaft, run it, and look at where the mark ends up:
+
+        180 degrees, opposite the start   8 microsteps, config is right
+        90 degrees, a quarter turn        16 microsteps, config is WRONG
+        unmoved                           it never turned, see below
+
+    The 16 case matters more than it looks. It is not a glitch, it is a
+    factor of two on every volume this machine will ever deliver, with a
+    waveform that looks entirely healthy. Nothing downstream would reveal it.
+    MS1/MS2 both grounded is 8 on a TMC2209 and 16 on a TMC2208, and the
+    carriers look alike.
+
+    Call back() to return the shaft when you have read it.
     """
-    dist = C.SCREW_LEAD if dist is None else dist
-    steps = int(round(dist * C.STEPS_PER_MM))
+    steps = int(round(revs * C.STEPS_PER_REV))
     print("config: %d steps/mm, %.3f uL/step, beat %.3f mm = %d steps"
           % (C.STEPS_PER_MM, C.UL_PER_STEP, C.BEAT_MM,
              round(C.BEAT_MM * C.STEPS_PER_MM)))
     print("pins STEP=%d DIR=%d EN=%d, DIR_ADVANCE=%d"
           % (C.STEP_PIN, C.DIR_PIN, C.EN_PIN, C.DIR_ADVANCE))
     print("")
-    print("commanding %+.2f mm = %d microsteps = %.2f shaft revolutions"
-          % (dist, steps, steps / float(C.STEPS_PER_REV)))
-    print("at %.0f rpm, so about %.1f s each way. Mark the shaft first."
-          % (rpm, abs(steps) / (rpm / 60.0 * C.STEPS_PER_REV)))
+    print("commanding %d microsteps. If the config is right that is %.2f"
+          % (steps, revs))
+    print("shaft revolutions, %.0f degrees, taking about %.1f s at %.0f rpm."
+          % (revs * 360.0, abs(steps) / (rpm / 60.0 * C.STEPS_PER_REV), rpm))
+    print("It will STOP there and stay stopped. Mark the shaft first.")
     enable(True)
     _burst(steps, rpm / 60.0 * C.STEPS_PER_REV)
     _wait_idle()
-    time.sleep_ms(600)
-    print("and back")
-    _burst(-steps, rpm / 60.0 * C.STEPS_PER_REV)
-    _wait_idle()
     off()
     print("")
-    print("Did the mark return to where it started?")
-    print("  yes, exactly      -> the whole step chain is right")
-    print("  short or long     -> microstep setting. MS1/MS2 to GND is 8 on a")
-    print("                       TMC2209 and 16 on a TMC2208. Wrong by 2x")
-    print("                       scales every volume this rig delivers.")
-    print("  turned the wrong way first -> set DIR_ADVANCE = %d in config.py"
-          % (0 if C.DIR_ADVANCE else 1))
-    print("                       on the laptop, regenerate, re-upload.")
-    print("  buzzed, did not turn -> coil pairs are split. A stepper's two")
-    print("                       coils go A1/A2 and B1/B2, never A1/B1.")
-    print("  stuttered or skipped -> VREF too low, or rpm too high for it.")
+    print("Where did the mark stop?")
+    print("  %3.0f deg, opposite the start -> %d microsteps, config is right"
+          % (revs * 360.0, C.MICROSTEP))
+    print("  %3.0f deg, half as far        -> %d microsteps, config is WRONG."
+          % (revs * 180.0, C.MICROSTEP * 2))
+    print("                              Every volume would be out by 2x and")
+    print("                              the waveform would look fine. Tell me.")
+    print("  did not move             -> buzzing means the coil pairs are")
+    print("                              split: a stepper's two coils go")
+    print("                              A1/A2 and B1/B2, never A1/B1.")
+    print("                              Silence means no STEP, EN or VM.")
+    print("  stuttered or skipped     -> VREF too low for this rate.")
+    print("")
+    print("Which way did it turn, seen from the shaft end? I need that for")
+    print("DIR_ADVANCE once the screw is fitted. Then: drive.back()")
+
+
+def back(revs=0.5, rpm=30.0):
+    """Undo selftest. Separate on purpose, so the evidence sits still first."""
+    _burst(-int(round(revs * C.STEPS_PER_REV)), rpm / 60.0 * C.STEPS_PER_REV)
+    _wait_idle()
+    off()
+    print("returned %.2f revolutions" % revs)

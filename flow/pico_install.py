@@ -139,7 +139,7 @@ def main():
             print("hardware, which is why this looks like a software fault.")
 
         if opts.get("--test"):
-            print("\n--- moving 2 mm and back, slowly. WATCH THE CARRIAGE ---")
+            print("\n--- half a shaft revolution, then it STOPS. MARK THE SHAFT ---")
             pico.exec("import drive; drive.selftest()", stream=True)
         else:
             print("\nNothing has moved. When the motor is connected and VREF is")
