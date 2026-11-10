@@ -33,10 +33,24 @@ open end. The frame will happily drive straight through that point. This
 refuses to.
 
 Power-up order, every time:
-    1. VREF set to 0.53 V, 12 V OFF
+    1. motor DISCONNECTED, 12 V ON, meter on the VREF pin against GND,
+       set it to 0.53 V. VREF is on the board's top edge next to DIAG and
+       INDEX, so there is no need to probe the pot itself.
     2. 12 V off, connect the motor
     3. 12 V on, THEN USB
 Never unplug the motor while VM is live. The coil dumps into the driver.
+
+VREF is metered with VM ON and the motor off, not with VM off. On a carrier
+that feeds the pot from the driver's own rail there is nothing to read
+without VM, and "0.00 V" then looks like a pot wound all the way down when
+it may be wound all the way up. Motor disconnected is what makes this safe,
+not power removed.
+
+The pot is BACKWARD from an A4988: clockwise REDUCES current. It is also
+coarse. A quarter turn of a 270 degree pot is worth roughly a volt, and the
+whole journey from the 1.2 V factory setting to 0.53 V is 0.67 V, so a
+quarter turn can cross the entire useful range and come out the other side.
+Meter after every adjustment; never count turns.
 """
 import time
 

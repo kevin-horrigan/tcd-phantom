@@ -39,10 +39,16 @@ The install reads the constants back off the board after importing, so a pass me
 ## 4. Before the motor turns
 
 ```
-1.  VREF set to 0.53 V with 12 V OFF
-2.  12 V still off, connect the motor
+1.  motor DISCONNECTED, 12 V ON, meter on VREF against GND, set 0.53 V
+2.  12 V off, connect the motor
 3.  12 V on, THEN USB
 ```
+
+VREF is on the board's top edge next to DIAG and INDEX, so the pot itself never needs probing.
+
+Measure it with **VM on and the motor off**, not with VM off. An earlier version of this file said to measure with 12 V off and that was wrong. On a carrier that feeds the pot from the driver's own rail there is nothing to read without VM, and a reading of 0.00 V then looks identical to a pot wound all the way down when it may be wound all the way up. What makes this safe is the motor being disconnected, not the power being removed.
+
+**The pot is backward from an A4988: clockwise REDUCES current.** It is also coarse. A quarter turn of a 270° pot is worth roughly a volt, and the whole journey from the 1.2 V factory setting down to 0.53 V is 0.67 V. A quarter turn can therefore cross the entire useful range and come out the far side. Meter after every adjustment and never count turns.
 
 Never unplug the motor while VM is live. The coil dumps its stored energy into the driver and kills it.
 
