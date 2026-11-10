@@ -29,6 +29,18 @@ point of choosing a ball check in the first place.
 MOUNT IT VERTICALLY, FLOW UPWARD. Gravity is the spring. On its side it has
 no closing force at all, and a ring seat centres the ball only because the
 ball rolls downhill to the middle of the ring.
+
+AND THAT IS A PROBLEM IN THIS LOOP, so it is worth saying before anyone
+plumbs it in. The feed runs DOWN from a jar 1.2 m up, and the run from there
+to the piston junction is horizontal. Neither orientation works: in the
+downward leg gravity holds the ball OFF its seat, and horizontal gives it no
+closing force at all. Fitting this valve means deliberately making a short
+upward leg for it, a 60 mm riser in the feed line with the valve in it, flow
+going up. That is easy and it is free, but it is not optional and it is not
+obvious from a drawing where the valve is a triangle on a horizontal line.
+
+The catalog alternative, Qosina 91050, is a duckbill and does not care which
+way up it is. That is most of what the 51 mm of head buys.
 """
 import math
 import os

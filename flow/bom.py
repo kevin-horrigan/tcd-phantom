@@ -88,6 +88,20 @@ BOM = [
      "BUY", "the 150 mm settling run into the block, plus spares. 1/8 in ID "
             "at 3.18 mm is the commodity equivalent and fits a 1/8 in barb"),
 
+    ("INSTRUMENTS", 2, "Honeywell ABP2DANT005PG2A3XX",
+     "0-5 psi gauge, I2C, barbed, LIQUID MEDIA", "BUY",
+     "P1 and P2. The 'T' in the part number is what makes it liquid media "
+     "with food-grade gel: an 'N' there is dry gases only and would be "
+     "destroyed. Barbless is ABP2DVNT005PG2A3XX and was the one actually "
+     "found in stock. 1 psi would be over range, there is nothing between "
+     "1 and 5, so 5 psi it is. ~200 Hz update, 3.3 V, I2C at 0x28"),
+    ("INSTRUMENTS", 1, "clear tube and 1 mm capillary", "manometer standpipe",
+     "BUY", "reads the MEAN to about a millimetre of fluid. The transducer's "
+            "total error band is 1.5 percent of 5 psi, which is 4 mmHg, so "
+            "the tube is the absolute reference and the sensor is the shape"),
+    ("INSTRUMENTS", 1, "kitchen scale, 1 g", "gravimetric flow catch", "BUY",
+     "0.4 percent on the mean flow over a 60 s catch"),
+
     ("FASTENERS", 4, "M3 x 8 cap screw", "motor face to the motor plate",
      "BUY", ""),
     ("FASTENERS", 4, "M3 x 10 cap screw", "nut flange to the carriage",
@@ -97,7 +111,7 @@ BOM = [
 ]
 
 ORDER = ["PRINTED", "MOTION", "MOTOR", "ELECTRONICS", "SYRINGE",
-         "FLUID INTERFACE", "FASTENERS"]
+         "FLUID INTERFACE", "INSTRUMENTS", "FASTENERS"]
 TITLE = {"PRINTED": "PRINTED PARTS",
          "MOTION": "MOTION HARDWARE, none of it in hand",
          "MOTOR": "MOTORS",
@@ -105,6 +119,7 @@ TITLE = {"PRINTED": "PRINTED PARTS",
          "SYRINGE": "SYRINGE",
          "FLUID INTERFACE": "FLUID INTERFACE, strictly the loop's but it "
                             "breaks without these",
+         "INSTRUMENTS": "INSTRUMENTS, P1 and P2 and the two cheap references",
          "FASTENERS": "FASTENERS AND CONSUMABLES"}
 
 
