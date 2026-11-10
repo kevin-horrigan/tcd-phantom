@@ -36,7 +36,15 @@ SEGMENTS = [
     ("feed tube, reservoir to valve", 400.0, 6.35),   # 1/4 in ID, 1/4 in = 6.35
     ("check valve port",               15.0, 3.30),   # Qosina 0.130 in port
     ("valve to piston tee",           150.0, 6.35),
-    ("tee to phantom inlet",          200.0, 6.35),
+    ("tee to 3 mm transition",        150.0, 6.35),
+    # The interface control document puts at least 150 mm of straight 3 mm
+    # tubing ahead of the coupling, so flow arrives at the cast lumen already
+    # developed: the M1 segment is 22 to 27 mm long and cannot supply its own
+    # entrance length. This budget used to run 6.35 mm right up to the inlet
+    # and step straight into the lumen, which left the single most expensive
+    # piece of tubing on the bench out of the sum. It costs 8.4 mm of tank
+    # height per 10 mm of its length. See feed_tubing.py.
+    ("settling run, 3 mm",            150.0, 3.00),
     ("phantom lumen",                  80.0, 3.00),   # 3 mm, 40 mm half-run x2
     ("phantom to plenum",             150.0, 6.35),
     ("plenum to constriction",        150.0, 6.35),
@@ -136,11 +144,13 @@ def report():
       % (plumb_mm, lumen_mm))
     A("  the 3 mm lumen itself, which is the device under test and not")
     A("  negotiable. The budget is therefore mostly fixed cost.")
-    A("  The %.3f psi valve adds %.0f mm. At a 300 mm reservoir that leaves"
-      % (best, best_mm))
-    A("  %.0f mm for the constriction, which is the only knob that sets"
-      % (300.0 - plumb_mm - best_mm))
-    A("  diastolic pressure, so it wants to be the largest term, not a remainder.")
+    left = 300.0 - plumb_mm - best_mm
+    A("  The %.3f psi valve adds %.0f mm. A 300 mm reservoir then %s"
+      % (best, best_mm,
+         "leaves %.0f mm for the constriction," % left if left > 0 else
+         "is %.0f mm SHORT of flowing at all, before" % -left))
+    A("  the constriction, which is the only knob that sets diastolic")
+    A("  pressure, so it wants to be the largest term, not a remainder.")
     A("  Put the reservoir at %.0f mm above the phantom and it is."
       % (2.0 * (plumb_mm + best_mm)))
     A("  Raising the reservoir is free. Buying a lower-cracking valve is not,")
