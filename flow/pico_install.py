@@ -5,7 +5,7 @@ board is plugged into, not on the Pico.
     python pico_install.py                 find the board, upload, verify
     python pico_install.py --port COM15    pick the board explicitly
     python pico_install.py --help          this text, and nothing else
-    python pico_install.py --test          upload, then move the motor 2 mm
+    python pico_install.py --test          upload, then half a shaft turn
 
 Uploads pico/config.py and pico/drive.py, then imports drive on the board and
 reads its constants back, so "installed" means the firmware actually ran and
@@ -119,6 +119,9 @@ def main():
         out, _ = pico.exec(WIFI_PROBE)
         wifi = "WIFI|yes" in out
 
+        # Drop the module cache before importing, or this verifies a file
+        # on disk while the board keeps running the version it replaced.
+        pico.fresh()
         out, err = pico.exec(CHECK)
         if err.strip():
             raise SystemExit("drive.py did not import cleanly:\n" + err)
@@ -147,7 +150,9 @@ def main():
 
         if opts.get("--test"):
             print("\n--- half a shaft revolution, then it STOPS. MARK THE SHAFT ---")
-            pico.exec("import drive; drive.selftest()", stream=True)
+            pico.fresh()
+            pico.exec("import drive" + chr(10) + "drive.selftest()",
+                      stream=True)
         else:
             print("\nNothing has moved. When the motor is connected and VREF is")
             print("set to 0.53 V, run this again with --test, or on the board:")

@@ -8,6 +8,12 @@
     python picolink.py run step_test.py     import and run it, stream output
     python picolink.py put a.py main.py    copy, renaming it on the board
     python picolink.py get drive.py        read a file back, verified by length
+    python picolink.py call drive.diag     reload, then run it
+
+Use "call", not "eval", to run code on the board. MicroPython caches imports
+for the life of the board session, so a module imported before an upload
+stays imported after it, and eval will happily run the version you replaced.
+"call" drops the cache first. This bit us on drive.selftest().
 
 Uploads are verified by a sha256 computed ON the board, because the link has
 no flow control and a file that lands short still imports and then misbehaves
@@ -143,6 +149,26 @@ class Pico:
                 "chunks instead.\n" % (len(out), self.SAFE_OUT))
         return dec(out), dec(err)
 
+    # Uploading a file does NOT change what is already running. MicroPython
+    # caches imports in sys.modules for the life of the board session, so a
+    # module imported once before an upload stays imported after it. Measured
+    # at the bench 2026-11-10: a fresh drive.py went up, verified by hash,
+    # and the board then ran the PREVIOUS version's selftest because an
+    # earlier eval had already imported it.
+    #
+    # On a file full of motion limits that is not an inconvenience. You can
+    # tighten a soft travel limit, watch the upload verify, and have the
+    # board keep enforcing the old one. So every path here that imports
+    # uploaded code drops the cache first, and the convenient way to call
+    # something on the board is the one that does it.
+    CACHED = ("config", "drive", "net", "secrets")
+
+    def fresh(self, names=None):
+        """Drop uploaded modules from sys.modules so the next import reloads."""
+        names = names or self.CACHED
+        self.exec("import sys\n" + "\n".join(
+            "sys.modules.pop(%r, None)" % n for n in names))
+
     def sha(self, remote):
         """sha256 of a file ON the board. 64 characters, so it cannot be
         truncated into looking right the way a file dump can."""
@@ -244,6 +270,15 @@ def main(argv):
             out, err = p.exec("import os\nprint(%r, os.stat(%r)[6], 'bytes on board')"
                               % (name, name))
             print("sent %d bytes" % n)
+        elif cmd == "call":
+            # The safe way to run something on the board: drop the module
+            # cache first, so what runs is what was last uploaded. "eval"
+            # does NOT do this, which is how stale code gets run.
+            mod, _, fn = argv[2].partition(".")
+            p.fresh()
+            code = "import {0}\n{0}.{1}()".format(mod, fn or "main")
+            out, err = p.exec(code, stream=True)
+            out = ""
         elif cmd == "get":
             data = p.get(argv[2], argv[3] if len(argv) > 3 else None)
             out, err = "%s: %d bytes read back intact" % (argv[2], len(data)), ""

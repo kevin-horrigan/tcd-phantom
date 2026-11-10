@@ -27,8 +27,13 @@ import assembly as A
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "pico", "config.py")
 
-# Proven on hardware 2026-11-08 with the wiring test. GND/GND on MS1/MS2 of a
-# BTT TMC2209 is 8 microsteps, which is NOT what the TMC2208 does.
+# Proven on hardware 2026-11-08 with the wiring test, and CONFIRMED against
+# the motor on 2026-11-10: a commanded 1600 microsteps turned the shaft
+# exactly one revolution. Had MS1/MS2 grounded been giving 16, as it does on
+# a TMC2208, that command would have turned half a turn and every volume this
+# rig delivers would have been out by a factor of two, with a waveform that
+# looked entirely healthy. This is the one constant here that is measured
+# rather than read off a datasheet, because the two boards look alike.
 STEP_PIN, DIR_PIN, EN_PIN = 2, 3, 4
 MICROSTEP = 8
 
