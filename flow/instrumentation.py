@@ -34,12 +34,13 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 import syringe_drive as S
+from head_budget import TANK_MM as H_TANK
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RHO, G, MU = 1037.0, 9.80665, 4.1e-3
 PSI, MMHG, KPA = 6894.757, 133.322, 1000.0
 Q_MEAN = 250.0                      # mL/min
-TANK_MM = 622.0                     # from head_budget.py, corrected
+TANK_MM = H_TANK                    # the constant-head jar, 1.2 m
 BEAT_HZ = 1.0
 
 # Commodity full-scale ranges, psi. The point of this list is how badly the
@@ -109,12 +110,13 @@ def main():
     # Taken off head_budget's own segment list rather than halving the tank
     # height, so the two files cannot drift apart.
     import head_budget as H
-    seg = H.SEGMENTS
-    up_mm = sum(head_mm(H.r_poiseuille(L, d) * H.q_si(Q_MEAN))
-                for _n, L, d in seg[:3])          # tank to the piston tee
-    down_mm = sum(head_mm(H.r_poiseuille(L, d) * H.q_si(Q_MEAN))
-                  for _n, L, d in seg[3:])        # tee to the reservoir
-    crack_mm = 50.8                               # Qosina 91050
+    # By ZONE, not by list position. This used to slice SEGMENTS as seg[:3]
+    # and seg[3:], which silently meant something different the moment the
+    # topology changed, and the topology did change: the plenum moved
+    # upstream of the phantom and a check valve became an R1.
+    up_mm = H.seg_head("up")
+    down_mm = H.seg_head("shape") + H.seg_head("lumen") + H.seg_head("down")
+    crack_mm = 0.0                                # no check valve in the loop
     constrict_mm = TANK_MM - up_mm - down_mm - crack_mm
     r_down = head_pa(down_mm + constrict_mm) / (Q_MEAN * 1e-6 / 60.0)
     pp_pa = r_down * q.max()                      # peak piston flow x downstream R
@@ -125,11 +127,10 @@ def main():
     A("  %-36s %9s %8s %8s %9s" % ("", "mm fluid", "psi", "kPa", "mmHg"))
     for nm, mm in (("tank head, static, no flow", TANK_MM),
                    ("mean at the piston tee", TANK_MM - crack_mm - up_mm),
-                   ("mean at the phantom inlet", constrict_mm + sum(
-                       head_mm(H.r_poiseuille(L, d) * H.q_si(Q_MEAN))
-                       for _n, L, d in seg[5:])),
+                   ("mean at the phantom inlet",
+                    constrict_mm + H.seg_head("lumen") + H.seg_head("down")),
                    ("PULSE, peak piston flow x R_down", head_mm(pp_pa)),
-                   ("the 91050 check valve alone", crack_mm),
+                   ("a 91050 check valve, IF one is added", 50.8),
                    ("the printed ball check alone", 2.2)):
         pa = head_pa(mm)
         A("  %-36s %9.0f %8.3f %8.2f %9.1f"

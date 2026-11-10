@@ -31,25 +31,84 @@ Q_MEAN = 250.0           # mL/min, gives 60 cm/s mean in a 3 mm lumen
 Q_PEAK = 500.0           # mL/min at peak systole
 
 # ------------------------------------------------------------------ the loop
-# name, length mm, bore mm.  Bore 0 means a fixed pressure drop, given below.
+# TOPOLOGY, from the diagram that went to the teams 2026-11-10:
+#
+#   constant-head jar -> R1 -> [P1, piston tees in] -> plenum -> 3 mm run
+#     -> phantom -> R2 -> reservoir -> Omegaflex -> back up to the jar
+#
+# Three things in that diagram are not what this file used to assume, and all
+# three were the diagram being right:
+#
+#  1. THE PLENUM IS UPSTREAM OF THE PHANTOM. It has to be. Its job is to round
+#     the pulse before the Doppler sees it, and downstream of the lumen it
+#     would be shaping what happens after the measurement.
+#  2. THERE IS NO CHECK VALVE. R1, a measured length of narrow tubing, does
+#     the blocking instead, and the trade that makes is worked out below.
+#  3. THE JAR IS AT 1.2 m, not the 622 mm this file had computed. The extra
+#     head is what pays for R1.
+#
+# name, length mm, bore mm, zone.  Zones, so nothing has to slice this list by
+# position again: "up" is between the jar and the piston junction, "shape"
+# carries the pulse to the block, "lumen" is Group 1, "down" is after it.
+TANK_MM = 1200.0         # constant-head jar above the phantom centreline
+R1_BORE = 2.0            # narrow tubing. See r1_length() for why not 1.0
+FORWARD_FRAC = 0.65      # share of the piston's output that goes toward the block
+
 SEGMENTS = [
-    ("feed tube, reservoir to valve", 400.0, 6.35),   # 1/4 in ID, 1/4 in = 6.35
-    ("check valve port",               15.0, 3.30),   # Qosina 0.130 in port
-    ("valve to piston tee",           150.0, 6.35),
-    ("tee to 3 mm transition",        150.0, 6.35),
+    ("jar to R1",                     200.0, 6.35, "up"),
+    ("R1, fixed resistance",            0.0, R1_BORE, "up"),   # length set below
+    ("R1 to the piston junction P1",  150.0, 6.35, "up"),
+    ("P1 to the plenum",              150.0, 6.35, "shape"),
+    ("plenum to the 3 mm transition", 150.0, 6.35, "shape"),
     # The interface control document puts at least 150 mm of straight 3 mm
     # tubing ahead of the coupling, so flow arrives at the cast lumen already
     # developed: the M1 segment is 22 to 27 mm long and cannot supply its own
-    # entrance length. This budget used to run 6.35 mm right up to the inlet
-    # and step straight into the lumen, which left the single most expensive
-    # piece of tubing on the bench out of the sum. It costs 8.4 mm of tank
-    # height per 10 mm of its length. See feed_tubing.py.
-    ("settling run, 3 mm",            150.0, 3.00),
-    ("phantom lumen",                  80.0, 3.00),   # 3 mm, 40 mm half-run x2
-    ("phantom to plenum",             150.0, 6.35),
-    ("plenum to constriction",        150.0, 6.35),
-    ("return to reservoir",           400.0, 6.35),
+    # entrance length. It costs 8.4 mm of jar height per 10 mm of its length.
+    # The diagram's "no tees in the straight run or the block" applies here:
+    # nothing taps this segment, which is why P2 sits before it.
+    ("settling run, 3 mm",            150.0, 3.00, "shape"),
+    ("phantom lumen",                  80.0, 3.00, "lumen"),
+    ("phantom to R2",                 200.0, 6.35, "down"),
+    ("return to reservoir",           500.0, 6.35, "down"),
 ]
+
+
+def seg_head(zone=None):
+    """mm of head eaten at the mean flow, optionally for one zone only."""
+    return sum(head_mm(r_poiseuille(L, d) * q_si(Q_MEAN))
+               for _n, L, d, z in SEGMENTS if zone is None or z == zone)
+
+
+def r1_length(bore=None, forward=None):
+    """Length of narrow tubing that sends `forward` of the pulse downstream.
+
+    The split is simpler than it looks. The piston injects at P1. Backward it
+    sees R1 to a jar whose level is pinned by an overflow, so a fixed
+    pressure. Forward it sees everything else to a reservoir, also fixed. Two
+    resistances to two fixed pressures, so the flow divides as
+
+        forward fraction = R1 / (R1 + R_down)
+
+    and because the MEAN flow passes through both in series at the same rate,
+    that ratio is also their share of the head:
+
+        forward fraction = (head across R1) / (total head)
+
+    So R1's job and R1's cost are the same number. Wanting more of the pulse
+    to go the right way means spending more of the jar on R1, and the jar is
+    the only place that money comes from.
+    """
+    d = bore or R1_BORE
+    f = forward if forward is not None else FORWARD_FRAC
+    target_pa = RHO * G * (f * TANK_MM) * 1e-3
+    r_per_m = 128.0 * MU / (math.pi * (d * 1e-3) ** 4)
+    return target_pa / q_si(Q_MEAN) / r_per_m * 1e3      # mm
+
+
+def _set_r1():
+    for i, (n, L, d, z) in enumerate(SEGMENTS):
+        if n.startswith("R1,"):
+            SEGMENTS[i] = (n, r1_length(), d, z)
 
 # Cracking pressures actually on the market, psi, from the vendors' own pages.
 VALVES = [
@@ -138,6 +197,12 @@ def head_mm(pa):
     return pa / (RHO * G) * 1e3
 
 
+# R1 has no length until the fluid properties and the flow are known, so it is
+# filled in here, once, at import. Everything downstream of this line sees a
+# complete SEGMENTS list.
+_set_r1()
+
+
 def report():
     A = print
     A("BLOOD-MIMICKING FLUID   %.0f kg/m3, %.1f mPa.s  (Ramnarine 1998 / IEC 61685)"
@@ -150,7 +215,7 @@ def report():
     A("  %-32s %7s %6s %10s %9s %7s" %
       ("segment", "len mm", "bore", "Pa", "mm head", "Re"))
     total = 0.0
-    for name, L, d in SEGMENTS:
+    for name, L, d, _z in SEGMENTS:
         dp = r_poiseuille(L, d) * q_si(Q_MEAN)
         total += dp
         A("  %-32s %7.0f %6.2f %10.1f %9.1f %7.0f"
@@ -163,6 +228,70 @@ def report():
       "Re %.0f in the lumen" % (Q_PEAK, peak, head_mm(peak), re_peak))
     if re_peak > 2300:
         A("  -> TURBULENT at peak in the 3 mm lumen, so the peak figure is optimistic")
+    A("")
+
+    # -------------------------------------------------- R1 or a check valve
+    down_mm = seg_head("shape") + seg_head("lumen") + seg_head("down")
+    up_fixed = seg_head("up") - head_mm(
+        r_poiseuille([L for n, L, d, z in SEGMENTS if n.startswith("R1,")][0],
+                     R1_BORE) * q_si(Q_MEAN))
+    A("R1, AND WHAT IT COSTS THE OTHER KNOB")
+    A("  R1 blocks the pulse from running back up to the jar by being a big")
+    A("  resistance. The split works out simply: looking back from P1 the")
+    A("  piston sees R1 into a jar pinned by its overflow, looking forward it")
+    A("  sees everything else into a reservoir, and both are fixed pressures.")
+    A("  So the pulse divides as R1 / (R1 + R_down), and because the mean flow")
+    A("  passes through both in series at the same rate, that ratio is also")
+    A("  their share of the head. R1's JOB and R1's COST are one number.")
+    A("")
+    A("  %-9s %10s %10s %11s  %s" %
+      ("forward", "R1 head", "R1 length", "left for R2", "note"))
+    base = None
+    for f in (0.50, 0.60, 0.65, 0.70, 0.80):
+        h1 = f * TANK_MM
+        L1 = r1_length(forward=f)
+        left = TANK_MM - h1 - up_fixed - down_mm
+        if base is None and abs(f - FORWARD_FRAC) < 1e-9:
+            base = left
+        A("  %-9s %7.0f mm %7.0f mm %8.0f mm  %s"
+          % ("%.0f%%" % (100 * f), h1, L1, left,
+             "fitted" if abs(f - FORWARD_FRAC) < 1e-9
+             else ("R2 has nothing left" if left < 0 else "")))
+    left_now = TANK_MM - FORWARD_FRAC * TANK_MM - up_fixed - down_mm
+    A("")
+    A("  Every point of pulse sent the right way is paid for out of R2, and")
+    A("  R2 is the only knob that sets diastolic pressure. At the fitted %.0f%%"
+      % (100 * FORWARD_FRAC))
+    A("  it has %.0f mm of authority out of a %.0f mm jar." % (left_now, TANK_MM))
+    A("")
+    crack = head_mm(VALVES[0][1] * PSI)
+    left_cv = TANK_MM - crack - up_fixed - down_mm
+    A("  A CHECK VALVE BREAKS THE TRADE, and this is the argument for one that")
+    A("  neither version of this design had made. A valve blocks backflow")
+    A("  outright instead of dividing it, so R1 can go to nearly nothing:")
+    A("    no valve, R1 at %.0f%%    %.0f%% of the stroke goes forward, "
+      "R2 gets %.0f mm" % (100 * FORWARD_FRAC, 100 * FORWARD_FRAC, left_now))
+    A("    %s" % VALVES[0][0])
+    A("      R1 removed, valve costs %.0f mm   ~100%% forward, R2 gets %.0f mm"
+      % (crack, left_cv))
+    A("  That is %.0f%% more stroke delivered AND %.1fx the tuning range on the"
+      % (100 * (1.0 - FORWARD_FRAC) / FORWARD_FRAC, left_cv / left_now))
+    A("  one adjustable element in the loop, for a part that costs %.0f mm of"
+      % crack)
+    A("  head. R1's %.0f mm was never doing anything except blocking." % (FORWARD_FRAC * TANK_MM))
+    A("")
+    A("  WHAT BORE TO CUT R1 FROM, if it stays. Length goes as d^4, so the")
+    A("  bore decides how finely the length can be trimmed by hand.")
+    A("  %-10s %11s %13s %9s" % ("bore mm", "length mm", "mm per 1% head", "Re"))
+    for d in (1.0, 1.6, 2.0, 2.5, 3.0):
+        L1 = r1_length(bore=d)
+        A("  %-10.1f %11.0f %13.1f %9.0f"
+          % (d, L1, L1 / 100.0, reynolds(Q_MEAN, d)))
+    A("  -> 1.0 mm is %.0f mm long and a millimetre of trim moves it %.0f%%."
+      % (r1_length(bore=1.0), 100.0 / r1_length(bore=1.0)))
+    A("     2.0 mm is %.0f mm and trims ten times finer. Cut long and shorten"
+      % r1_length(bore=2.0))
+    A("     it against the manometer, which is what 'a measured length' means.")
     A("")
 
     A("WHAT EACH CANDIDATE VALVE COSTS, AND THE RESERVOIR HEIGHT IT FORCES")

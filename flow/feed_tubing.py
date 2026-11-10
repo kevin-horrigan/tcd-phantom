@@ -7,22 +7,24 @@ head_budget.py asks how high the tank has to be. This asks the next question
 down: given that height, what should the tubing actually be. They are not the
 same question, and the second one is not answered by "as big as convenient".
 
-The feed side has THREE zones with three different jobs, and the check valve
-is what separates them:
+The feed side has FOUR zones with different jobs, and R1 is what separates
+them. (This file originally said "check valve" here, because it was written
+before the sent diagram was read. R1 does the same job by a different means,
+and the zones are unchanged.)
 
-    tank ---- A ----> [check valve] ---- B ----> [piston tee] ---- C ---->
-                                                          ---- D ----> phantom
+    jar ---- A ----> [R1] ---- B ----> [P1, piston] ---- C ---->
+                                                   ---- D ----> phantom
 
-  A  tank to the check valve.      Carries the MEAN flow only.
-  B  valve to the piston tee.      Carries the MEAN flow only.
-  C  tee to the 3 mm transition.   Carries the mean AND the pulse.
+  A  jar to R1.                    Carries the MEAN flow only.
+  B  R1 to the piston junction.    Carries the MEAN flow only.
+  C  P1 onward to the transition.  Carries the mean AND the pulse.
   D  the settling run, 3 mm.       Carries the mean AND the pulse.
 
 That split is the whole trick, and it is worth saying out loud because it is
-not obvious: the check valve blocks the pulse from travelling back up toward
-the tank, so the compliance of A and B is charged to nothing. Only C and D
-can steal stroke volume. A and B are picked on head loss alone, and head loss
-on that stretch turns out to be almost free.
+not obvious: R1 keeps most of the pulse from travelling back up toward the
+jar, so the compliance of A and B is charged to almost nothing. Only C and D
+can steal stroke volume. A and B are picked on head loss alone, and at 1/4 in
+that loss is almost free.
 
 Three physical effects compete, and they do not all point the same way:
 
@@ -194,8 +196,9 @@ def main():
 
     A("ZONE A+B, TANK TO THE PISTON TEE  (%.0f mm of run, MEAN flow only)"
       % (LEN_A + LEN_B))
-    A("  The check valve sits inside this stretch, so none of its compliance")
-    A("  is charged against the stroke. Head loss is the only cost.")
+    A("  R1 sits inside this stretch, so almost none of its compliance is")
+    A("  charged against the stroke. Head loss is the only cost here, and R1")
+    A("  itself is the big term: see head_budget.py, not this table.")
     A("  %-9s %6s %8s %8s %7s %8s %9s"
       % ("bore", "mm", "mm head", "cm/s", "Re", "alpha", "mL held"))
     for name, d in BORES:
@@ -264,38 +267,29 @@ def main():
     A("")
 
     # ------------------------------------------------- the corrected budget
-    A("THE BUDGET head_budget.py IS MISSING")
-    A("  head_budget.py runs 6.35 mm all the way to the phantom inlet and then")
-    A("  steps straight into the lumen. The interface control document does")
-    A("  not: it puts 150 mm of 3 mm tubing ahead of the coupling. That run is")
-    A("  absent from the budget, and it is not a rounding error.")
-    old = sum(head_mm(r_pois(L, d) * q_si(Q_MEAN)) for L, d in
-              ((LEN_A, 6.35), (15.0, 3.30), (LEN_B, 6.35), (200.0, 6.35),
-               (LUMEN_L, 3.0), (150.0, 6.35), (150.0, 6.35), (400.0, 6.35)))
-    new = sum(head_mm(r_pois(L, d) * q_si(Q_MEAN)) for L, d in
-              ((LEN_A, 6.35), (15.0, 3.30), (LEN_B, 6.35), (LEN_C, 6.35),
-               (LEN_D, BORE_D), (LUMEN_L, 3.0), (150.0, 6.35), (150.0, 6.35),
-               (400.0, 6.35)))
-    crack = head_mm(0.075 * PSI)   # Qosina 91050, the 1/4 in ID barbed part
-    A("  plumbing as budgeted            %6.0f mm of head" % old)
-    A("  plumbing with the settling run  %6.0f mm of head" % new)
-    A("  Qosina 91050 cracking pressure  %6.0f mm" % crack)
-    A("  tank height for the constriction to own half the head:")
-    A("    as budgeted  %.0f mm      with the settling run  %.0f mm"
-      % (2.0 * (old + crack), 2.0 * (new + crack)))
-    A("  So the 370 mm figure in the notes is for a loop that does not have")
-    A("  the agreed interface in it. With the settling run the tank wants to")
-    A("  be about %.0f mm above the phantom, or %.0f mm if the constriction is"
-      % (2.0 * (new + crack), 1.5 * (new + crack)))
-    A("  allowed to own a third of the head instead of half.")
+    A("WHERE THIS SITS IN THE HEAD BUDGET")
+    A("  head_budget.py carries the live numbers and this file should not")
+    A("  restate them, because that is how two files start disagreeing. What")
+    A("  belongs here is the one thing it does not cover: the budget is about")
+    A("  RESISTANCE, and nothing in it sees compliance at all. A loop can pass")
+    A("  the head budget exactly and still deliver a rounded-off systole,")
+    A("  because the stroke went into a tube wall rather than into the block.")
+    A("")
+    import head_budget as _H
+    A("  jar %.0f mm, plumbing %.0f mm, R2 keeps %.0f mm."
+      % (_H.TANK_MM, _H.seg_head(), _H.TANK_MM - _H.seg_head()))
+    A("  Of that plumbing, R1 alone is %.0f mm and it is deliberate."
+      % _H.head_mm(_H.r_poiseuille(
+          [L for n, L, d, z in _H.SEGMENTS if n.startswith("R1,")][0],
+          _H.R1_BORE) * _H.q_si(_H.Q_MEAN)))
     A("")
 
     A("WHAT TO BUY")
-    A("  A  tank to check valve    1/4 in ID. Material free, nothing is")
-    A("                            charged against the pulse upstream of the")
-    A("                            valve. Use whatever is clear and cheap.")
-    A("  B  valve to piston tee    1/4 in ID, same reasoning.")
-    A("  C  tee to transition      1/4 in ID in BRAIDED PVC or Tygon, and as")
+    A("  A  jar to R1              1/4 in ID. Material free, nothing is")
+    A("                            charged against the pulse upstream of R1.")
+    A("                            Use whatever is clear and cheap.")
+    A("  B  R1 to the piston P1    1/4 in ID, same reasoning.")
+    A("  C  P1 to transition       1/4 in ID in BRAIDED PVC or Tygon, and as")
     A("                            short as the bench can be routed. Not")
     A("                            silicone. This is the only stretch where")
     A("                            the wall competes with the piston.")
