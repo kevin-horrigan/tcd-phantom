@@ -97,10 +97,15 @@ ax.text(DX - 0.15, jtop + 0.56, "J2", fontsize=8, color=GREY, ha="right")
 vref = (DX + DW / 2, DY + DH - 0.08)
 ax.add_patch(Circle(vref, 0.075, facecolor="white", edgecolor=PWR, lw=1.2,
                     zorder=5))
-ax.annotate("VREF test point.  Set it to 0.53 V against GND\n"
-            "= 0.375 A rms.  It ships at 1.2 V = 0.9 A, too much\n"
-            "to reverse at speed.  Do not go below 0.5 V: the\n"
-            "datasheet calls that range not recommended.",
+# A window, not a point. The pot moves 0.1 to 0.2 V per nudge, so asking for
+# 0.53 V exactly is asking for an afternoon. Anything from 0.50 to 0.64 V
+# works: below is the datasheet floor, above is where the phase can no longer
+# reverse inside the beat. Set on 2026-11-10 to 0.556 V = 0.393 A.
+ax.annotate("VREF.  Anywhere from 0.50 to 0.64 V against GND.\n"
+            "Below 0.50 the datasheet says not recommended;\n"
+            "above 0.64 the phase cannot reverse at speed.\n"
+            "Ships at 1.2 V = 0.9 A.  Needs the Pico powered:\n"
+            "the pot divides VCC_IO, so 12 V alone reads 0 V.",
             vref, (DX + DW / 2, DY + DH + 1.05), fontsize=7.8, color=PWR,
             ha="center", va="bottom", linespacing=1.6, zorder=8,
             arrowprops=dict(arrowstyle="-", color=PWR, lw=0.8))

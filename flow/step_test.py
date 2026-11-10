@@ -65,8 +65,24 @@ BTT's manual states the factory setting directly: Vref 1.2 V = 0.9 A.
 
 Do not skip it. At the factory 0.9 A the phase cannot reverse inside the
 2.61 ms a 230 rpm beat allows, and the motor stalls at speed for a reason that
-has nothing to do with the motor. The potentiometer is BACKWARD from an
-A4988: clockwise REDUCES current.
+has nothing to do with the motor.
+
+POT DIRECTION, MEASURED ON THIS BOARD 2026-11-10. On this BTT TMC2209 V1.3,
+CW RAISES VREF and CCW LOWERS it. Evidence: from 0.27 V a small CCW turn gave
+0.00 V at a hard end stop, and from that stop CW ran up to 1.25 V.
+
+An earlier version of this file said the opposite, "backward from an A4988,
+clockwise REDUCES current". That was inherited from what is commonly said
+about these carriers and was never measured here. It is wrong for this board
+and it caused a real false alarm: a quarter turn CCW was read as having
+RAISED the current toward 1.6 A on a 1.0 A motor, when it had lowered it and
+was harmless. Do not take a direction claim from a forum, a datasheet or from
+this file. Find the end stop. A pot that reads 0.00 V and will not go lower
+is at its minimum, and minimum is the harmless end to start from.
+
+The pot is also coarse: roughly 0.1 to 0.2 V per small nudge, and the whole
+journey from the 1.2 V factory setting to the target is 0.67 V. Six
+iterations to land is normal. Meter after every adjustment, never count turns.
 
 0.375 A rather than a rounder number because the setting is pinned from both
 sides. Above about 0.45 A the reversal budget runs out. Below 0.37 A the pot
@@ -91,11 +107,19 @@ coil on A1/A2 and the other on B1/B2. A coil split across A and B buzzes and
 does not turn, which is the single most common bring-up failure.
 
 Order of operations, every time:
-    1. motor disconnected, 12 V on, meter on the VREF pin against GND
-       (VREF is brought out on the board's top edge next to DIAG and INDEX,
-       so there is no need to probe the pot itself)
+    1. motor disconnected, 12 V on, Pico USB on, meter against GND
     2. 12 V off, connect the motor
     3. 12 V on, THEN USB
+
+VREF needs VCC_IO, not just VM. Measured on this board: with 12 V on and the
+Pico unplugged the wiper reads 0 V, and one outer leg of the pot sits at
+about 3.3 V, so the divider is fed from VCC_IO and there is nothing to read
+without it. That matters more than it sounds: 0.00 V from a missing logic
+supply is indistinguishable from a pot wound fully down, and the obvious
+response to a reading of zero is to turn it up.
+
+The TP hole is awkward to hold a probe in. The pot's middle leg is the same
+node and is easier to land on.
 Never unplug the motor while VM is live. The coil dumps its energy into the
 driver and kills it.
 """

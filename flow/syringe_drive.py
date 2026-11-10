@@ -62,7 +62,16 @@ DRIVE_V = 12.0
 # recommended" and 0.5 V is 20% of a full scale that this board's 0.11 ohm
 # sense resistors put at 1.77 A rms. So 0.375 A it is: the lowest current the
 # pot can legally ask for, which still leaves a 2.4x reversal margin.
-SET_I = 0.375                        # phase current we actually run, A rms
+# VREF is MEASURED, not chosen. 0.53 V was the target; the pot on this board
+# is coarse enough that it took six iterations to land, and where it landed is
+# 0.556 V on an MDO3024 at 0.1 V/div, 1x probe, steady over five reads
+# (2026-11-10). So the phase current is DERIVED from what the pot actually
+# does, not asserted at the number the design asked for. 0.393 A sits inside
+# the window this setting was pinned to from both sides: above about 0.45 A
+# the phase reversal budget runs out at speed, below 0.37 A the TMC2209
+# datasheet calls VREF "not recommended".
+VREF_SET = 0.556                     # V, MEASURED at the pot wiper
+SET_I = VREF_SET / 2.5 * 1.768       # 0.393 A rms, derived from the above
 VREF_FLOOR = 0.5                     # datasheet: below this is not recommended
 TMC_FULL_SCALE = 1.768               # A rms at VREF 2.5 V with R_sense 0.11
 M3 = 3.4                             # M3 clearance

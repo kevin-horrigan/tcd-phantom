@@ -33,24 +33,25 @@ open end. The frame will happily drive straight through that point. This
 refuses to.
 
 Power-up order, every time:
-    1. motor DISCONNECTED, 12 V ON, meter on the VREF pin against GND,
-       set it to 0.53 V. VREF is on the board's top edge next to DIAG and
-       INDEX, so there is no need to probe the pot itself.
+    1. motor DISCONNECTED, 12 V on, Pico USB on, meter against GND
     2. 12 V off, connect the motor
     3. 12 V on, THEN USB
 Never unplug the motor while VM is live. The coil dumps into the driver.
 
-VREF is metered with VM ON and the motor off, not with VM off. On a carrier
-that feeds the pot from the driver's own rail there is nothing to read
-without VM, and "0.00 V" then looks like a pot wound all the way down when
-it may be wound all the way up. Motor disconnected is what makes this safe,
-not power removed.
+VREF needs VCC_IO, not just VM. Measured here: with 12 V on and the Pico
+unplugged the wiper reads 0 V, and one outer leg of the pot sits at about
+3.3 V. A reading of 0.00 V from a missing logic supply is indistinguishable
+from a pot wound fully down, and the obvious response to zero is to turn it
+UP. Motor disconnected is what makes this safe, not power removed.
 
-The pot is BACKWARD from an A4988: clockwise REDUCES current. It is also
-coarse. A quarter turn of a 270 degree pot is worth roughly a volt, and the
-whole journey from the 1.2 V factory setting to 0.53 V is 0.67 V, so a
-quarter turn can cross the entire useful range and come out the other side.
-Meter after every adjustment; never count turns.
+Direction, measured on this board: CW raises VREF, CCW lowers it. An earlier
+note here said the opposite, inherited rather than measured, and it caused a
+false alarm. Find the end stop instead of trusting any claim, this one
+included. A pot reading 0.00 V that will not go lower is at minimum, and
+minimum is the harmless end to start from.
+
+Set to 0.556 V on 2026-11-10, which is 0.393 A rms. syringe_drive.py derives
+SET_I from that measurement rather than from the 0.53 V the design asked for.
 """
 import time
 

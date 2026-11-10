@@ -39,16 +39,22 @@ The install reads the constants back off the board after importing, so a pass me
 ## 4. Before the motor turns
 
 ```
-1.  motor DISCONNECTED, 12 V ON, meter on VREF against GND, set 0.53 V
+1.  motor DISCONNECTED, 12 V on, Pico USB on, meter against GND, set 0.53 V
 2.  12 V off, connect the motor
 3.  12 V on, THEN USB
 ```
 
-VREF is on the board's top edge next to DIAG and INDEX, so the pot itself never needs probing.
+**VREF needs VCC_IO, not just VM.** Measured on this board: with 12 V on and the Pico unplugged, the wiper reads 0 V, and one outer leg of the pot sits at about 3.3 V. The divider is fed from the logic supply, so there is nothing to read without it. That matters more than it sounds, because 0.00 V from a missing logic supply is indistinguishable from a pot wound fully down, and the obvious response to a reading of zero is to turn it *up*.
 
-Measure it with **VM on and the motor off**, not with VM off. An earlier version of this file said to measure with 12 V off and that was wrong. On a carrier that feeds the pot from the driver's own rail there is nothing to read without VM, and a reading of 0.00 V then looks identical to a pot wound all the way down when it may be wound all the way up. What makes this safe is the motor being disconnected, not the power being removed.
+What makes this safe is the motor being disconnected, not the power being removed. An earlier version of this file said to measure with 12 V off; that was wrong.
 
-**The pot is backward from an A4988: clockwise REDUCES current.** It is also coarse. A quarter turn of a 270° pot is worth roughly a volt, and the whole journey from the 1.2 V factory setting down to 0.53 V is 0.67 V. A quarter turn can therefore cross the entire useful range and come out the far side. Meter after every adjustment and never count turns.
+**Direction, measured on this board: CW raises VREF, CCW lowers it.** An earlier version said the opposite, inherited from what is commonly said about these carriers and never measured here. Do not take a direction claim from a forum, a datasheet, or from this file. Find the end stop: a pot that reads 0.00 V and will not go lower is at minimum, and minimum is the harmless end to start from.
+
+The pot is coarse, roughly 0.1 to 0.2 V per small nudge against a 0.67 V journey from the factory setting. Six iterations to land is normal. Meter after every adjustment and never count turns.
+
+The TP hole is awkward to hold a probe in. The pot's middle leg is the same node and is easier to land on.
+
+As set on 2026-11-10: **0.556 V**, measured on an MDO3024 at 0.1 V/div with a 1× probe, steady over five reads. That is 0.393 A rms, which gives 6.8× the torque the piston needs and a 6.8× phase-reversal margin. `syringe_drive.py` derives `SET_I` from this measured value rather than from the 0.53 V the design asked for.
 
 Never unplug the motor while VM is live. The coil dumps its stored energy into the driver and kills it.
 
