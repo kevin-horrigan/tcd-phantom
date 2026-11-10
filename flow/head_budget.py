@@ -53,7 +53,12 @@ SEGMENTS = [
 
 # Cracking pressures actually on the market, psi, from the vendors' own pages.
 VALVES = [
-    ("Qosina 9105x high-flow barbed",      0.072, "barb 1/8 to 3/8 in ID. THE ONE"),
+    ("Qosina 91050 barbed, 1/4 in ID",     0.075, "THE ONE. Matches the trunk"),
+    ("Qosina 91054 barbed, 3/16 in ID",    0.055, "lowest of the barbed four"),
+    ("Qosina 91053 barbed, 1/8 in ID",     0.061, "barb for a 3 mm run"),
+    ("Qosina 91055 barbed, 3/8 in ID",     0.072, "if the trunk goes wider"),
+    ("Qosina 91052 port, 1/8 in OD tube",  0.029, "NOT barbed. Push-on OD port"),
+    ("industrialspec CVN/CVP/CVK",         0.217, "1/4 in barb, see note below"),
     ("Qosina 11584 / 80057 duckbill",      0.112, "0.130 in OD port, too small"),
     ("Qosina 80065 duckbill",              0.433, "FEMALE + MALE LUER LOCK, the trap"),
     ("Qosina 80089 / 80091 duckbill",      0.433, "barb"),
@@ -61,12 +66,51 @@ VALVES = [
     ("ITW BOLUSSAFE diaphragm",            1.500, "luer, 1.5 to 5 psi"),
 ]
 
-# Qosina quotes the 9105x family at 0.029 psi on the product page and 0.072 psi
-# in the same page's technical features. 0.072 is used above because a budget
-# built on the kinder of two conflicting vendor numbers is not a budget. Ask
-# Qosina which is current before the drawing says so.
+# This table used to carry "Qosina 9105x" as a family wildcard, with a note
+# that Qosina quoted both 0.029 and 0.072 psi for it. Both of those were my
+# problem, not Qosina's.
+#
+# There is no part called 9105x. The barbed high-flow family is four separate
+# parts, 91050 / 91053 / 91054 / 91055, and a search for the wildcard returns
+# nothing, which is exactly what it did to the person trying to buy one. The
+# part that matches a 1/4 in trunk is 91050.
+#
+# The 0.029 figure was not a contradiction either. It belongs to 91052, which
+# is a different valve: a push-on port for 1/8 in OD tubing, not a barb. Two
+# numbers for two parts, read as two numbers for one part.
+#
+# The CVN/CVP/CVK entry is NOT the vendor's psi figure. industrialspec states
+# "a very low cracking pressure: 6 inches H2O (water). This is equal to only
+# 0.015 psi or 1.49 kPa". Two of those three agree and one does not: 6 inches
+# of water IS 1.49 kPa, and 1.49 kPa is 0.217 psi, not 0.015. The psi number
+# is low by a factor of fourteen. 0.217 is used above, because the two
+# self-consistent units outvote the one that is not, and because a check valve
+# chosen on a number that cheap would have been chosen for nothing. Worth
+# confirming with them, but not worth designing around until they do.
 
 PSI = 6894.757           # Pa per psi
+
+# A ball resting on a seat, for the case where the catalog part cannot be
+# bought. Densities in kg/m3 for balls sold by the bag.
+BALL_D, SEAT_D = 6.35, 3.00      # mm
+BALLS = [
+    ("nylon", 1140.0), ("acetal / Delrin", 1410.0), ("PTFE", 2160.0),
+    ("soda-lime glass", 2500.0), ("316 stainless", 7980.0),
+]
+
+
+def ball_crack(rho_ball, ball_d=None, seat_d=None):
+    """Pa. Net buoyant weight of the ball over the seat orifice area.
+
+    Statics, and that is the point: no vendor number, no tolerance stack, and
+    nothing that can be wrong by a factor of fourteen the way a conversion on
+    a product page can.
+    """
+    bd = (ball_d or BALL_D) * 1e-3
+    sd = (seat_d or SEAT_D) * 1e-3
+    vol = math.pi / 6.0 * bd ** 3
+    return vol * (rho_ball - RHO) * G / (math.pi * (sd / 2.0) ** 2)
+
 
 
 def q_si(ml_per_min):
@@ -153,8 +197,10 @@ def report():
     A("  pressure, so it wants to be the largest term, not a remainder.")
     A("  Put the reservoir at %.0f mm above the phantom and it is."
       % (2.0 * (plumb_mm + best_mm)))
-    A("  Raising the reservoir is free. Buying a lower-cracking valve is not,")
-    A("  and below about 0.03 psi the parts stop existing. Fix the head.")
+    A("  Raising the reservoir is free. Buying a lower-cracking valve is not:")
+    A("  the one part below 0.03 psi, Qosina 91052, is a push-on port for")
+    A("  1/8 in OD tubing rather than a barb, so it does not fit this loop.")
+    A("  Fix the head, not the valve.")
     A("")
     A("  The trap: the 0.433 psi part is the only luer-to-luer check valve in")
     A("  the catalog, so it is the one a search for a luer check valve finds")
@@ -163,8 +209,42 @@ def report():
     A("  provides, and the loop would simply sit there. A barbed valve plus a")
     A("  barb-to-luer adapter costs a few dollars and works.")
     A("")
+    A("IF THE PART CANNOT BE SOURCED: A GRAVITY BALL CHECK")
+    A("  Worth pricing because the cracking pressure of a ball resting on a")
+    A("  seat is pure statics, and it beats every valve above.")
+    A("")
+    A("      P = V_ball x (rho_ball - rho_fluid) x g / A_seat")
+    A("")
+    A("  The fluid is doing most of the work: it is 1037 kg/m3, so a plastic")
+    A("  ball is nearly neutrally buoyant in it and weighs almost nothing.")
+    A("  Mounted vertically with flow upward, the ball lifts off the seat on")
+    A("  forward flow and drops back on reverse. %0.1f mm ball, %0.1f mm seat:"
+      % (BALL_D, SEAT_D))
+    A("  %-18s %8s %9s %9s %9s" % ("ball", "kg/m3", "psi", "mm head", "vs 91050"))
+    for name, rho in BALLS:
+        pa = ball_crack(rho)
+        A("  %-18s %8.0f %9.4f %9.1f %8.1fx"
+          % (name, rho, pa / PSI, head_mm(pa),
+             head_mm(0.075 * PSI) / max(head_mm(pa), 1e-9)))
+    A("")
+    A("  Acetal on a 3 mm seat costs %.0f mm of head against the 91050's %.0f."
+      % (head_mm(ball_crack(1410.0)), head_mm(0.075 * PSI)))
+    A("  Stainless is the one to avoid: steel is eight times the fluid density")
+    A("  and lands back among the catalog valves.")
+    A("")
+    A("  What this does NOT tell you is whether it reseats fast enough. That")
+    A("  is a ball falling through a confined annulus, where the fluid it has")
+    A("  to displace past itself dominates, and it is not worth modelling. In")
+    A("  free fall a %0.1f mm acetal ball crosses a 3 mm lift in %.0f ms, so the"
+      % (BALL_D, 1e3 * (2 * 0.003 / (G * (1 - RHO / 1410.0))) ** 0.5))
+    A("  real figure is somewhere above that against a %.0f ms ejection. Reverse"
+      % (0.40 * 1000.0))
+    A("  flow helps it shut. Measure it, do not calculate it: put the valve on")
+    A("  the bench, run the piston, and watch whether the return stroke pulls")
+    A("  fluid back through it.")
+    A("")
     A("  Specify the barb to the loop tubing, not the other way round. The")
-    A("  9105x family covers 1/8 through 3/8 in ID, so whatever the team buys")
+    A("  91050/3/4/5 family covers 1/8 through 3/8 in ID, so whatever is bought")
     A("  for the loop has a matching valve in the same family.")
 
 

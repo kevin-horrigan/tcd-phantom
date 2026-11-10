@@ -67,13 +67,26 @@ BOM = [
      "HAVE", "bought 2026-11-09. Halved the screw speed, 446 -> 230 rpm, "
              "which retired most of the motor problem"),
 
-    ("FLUID INTERFACE", 1, "check valve", "Qosina 9105x, 0.03 to 0.07 psi, barbed",
-     "BUY", "THE ONE TO GET RIGHT. The luer-to-luer part cracks at 0.433 psi "
-            "and stops the loop dead. See head_budget.py"),
-    ("FLUID INTERFACE", 1, "tee", "barbed, to the loop tubing size", "BUY",
+    ("FLUID INTERFACE", 1, "check valve", "Qosina 91050, 0.075 psi, 1/4 in barb",
+     "BUY", "THE ONE TO GET RIGHT. This line used to read '9105x', which is a "
+            "family wildcard and not a part number, so it found nothing. The "
+            "four barbed parts are 91050 (1/4 in), 91054 (3/16), 91053 (1/8) "
+            "and 91055 (3/8). Qosina needs a free account to see pricing. The "
+            "luer-to-luer part cracks at 0.433 psi and stops the loop dead"),
+    ("FLUID INTERFACE", 1, "tee", "barbed, 1/4 in ID", "BUY",
      "piston tees in between the check valve and the phantom"),
-    ("FLUID INTERFACE", 2, "barb to female luer adapter", "to the loop tubing",
+    ("FLUID INTERFACE", 2, "barb to female luer adapter", "1/4 in barb",
      "BUY", "the syringe tip is luer, the loop is barbed"),
+    ("FLUID INTERFACE", 1, "reducing barb, 1/4 to 1/8 in", "the 3 mm transition",
+     "BUY", "1/8 in is 3.18 mm, so a 1/8 in barb IS the 3 mm barb. There is "
+            "no such thing as a 3 mm barb and looking for one wastes an hour"),
+    ("FLUID INTERFACE", 2.0, "braided PVC tubing, 1/4 in ID", "metres, stiff",
+     "BUY", "NOT silicone. 150 mm of 1/4 in silicone between the tee and the "
+            "phantom stores 13.5 percent of the stroke in its own wall. The "
+            "same run in braided PVC stores 0.40 percent. See feed_tubing.py"),
+    ("FLUID INTERFACE", 0.5, "tubing, 3 mm ID", "metres, stiff walled",
+     "BUY", "the 150 mm settling run into the block, plus spares. 1/8 in ID "
+            "at 3.18 mm is the commodity equivalent and fits a 1/8 in barb"),
 
     ("FASTENERS", 4, "M3 x 8 cap screw", "motor face to the motor plate",
      "BUY", ""),
@@ -128,8 +141,11 @@ def main():
     print("                      often. At a 2 mm lead the same beat needs")
     print("                      %.0f rpm, which no 12 V NEMA 17 will do."
           % rpm_wrong)
-    print("    Qosina 9105x check valve.  The luer-to-luer alternative cracks")
-    print("                      at 0.433 psi, which is the entire head.")
+    print("    Qosina 91050 check valve.  There is no part called 9105x;")
+    print("                      that was a family wildcard in these notes and")
+    print("                      it is why the search came back empty. The")
+    print("                      luer-to-luer alternative cracks at 0.433 psi,")
+    print("                      which is the entire head.")
 
 
 if __name__ == "__main__":

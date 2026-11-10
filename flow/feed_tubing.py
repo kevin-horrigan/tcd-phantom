@@ -69,8 +69,10 @@ BEAT_HZ = 1.0
 PP_MMHG = 40.0
 
 # Commodity tubing, by inner diameter. These are the sizes actually stocked
-# and the sizes the Qosina 9105x check valve family is barbed for (1/8 to
-# 3/8 in ID), which is why the list stops where it does.
+# and the sizes the Qosina barbed check valve family covers: 91053 at 1/8 in,
+# 91054 at 3/16, 91050 at 1/4 and 91055 at 3/8. That is why the list stops
+# where it does. These notes used to say "9105x", which is a wildcard and not
+# a part number, and a search for it returns nothing.
 BORES = [
     ("1/8 in",  3.18),
     ("3/16 in", 4.76),
@@ -274,10 +276,10 @@ def main():
               ((LEN_A, 6.35), (15.0, 3.30), (LEN_B, 6.35), (LEN_C, 6.35),
                (LEN_D, BORE_D), (LUMEN_L, 3.0), (150.0, 6.35), (150.0, 6.35),
                (400.0, 6.35)))
-    crack = head_mm(0.072 * PSI)
+    crack = head_mm(0.075 * PSI)   # Qosina 91050, the 1/4 in ID barbed part
     A("  plumbing as budgeted            %6.0f mm of head" % old)
     A("  plumbing with the settling run  %6.0f mm of head" % new)
-    A("  Qosina 9105x cracking pressure  %6.0f mm" % crack)
+    A("  Qosina 91050 cracking pressure  %6.0f mm" % crack)
     A("  tank height for the constriction to own half the head:")
     A("    as budgeted  %.0f mm      with the settling run  %.0f mm"
       % (2.0 * (old + crack), 2.0 * (new + crack)))
@@ -299,8 +301,9 @@ def main():
     A("                            the wall competes with the piston.")
     A("  D  settling run           3.0 mm ID, stiff, 150 mm and no more.")
     A("  return side               1/4 in or wider, material free.")
-    A("  All of A through C are inside the 9105x barb range, so the check")
-    A("  valve matches the trunk with no adapters.")
+    A("  All of A through C are inside the barbed family's range, so the")
+    A("  check valve matches the trunk with no adapters: 91050 for a 1/4 in")
+    A("  trunk, 0.075 psi, which is %.0f mm of the head budget." % crack)
     A("")
     A("  The one number to hold: C and D together should steal under 3 percent")
     A("  of the stroke. Braided 1/4 in at %.0f mm plus 3 mm at %.0f mm gives"
