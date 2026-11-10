@@ -215,6 +215,9 @@ def goto_mm(where, rpm=60.0):
     return move_mm(where - mm(), rpm=rpm)
 
 
+late_us = 0                   # worst slice lateness in the last beat
+
+
 def beat(hr=60.0, slices=None):
     """One beat, played from the generated displacement profile.
 
@@ -223,18 +226,34 @@ def beat(hr=60.0, slices=None):
     share of the beat. The profile reverses twice over a cycle: once at the
     dicrotic notch, once into the refill, and _burst handles the direction
     change by waiting for PIO to finish rather than guessing.
+
+    Python hands each burst to PIO and then paces itself to the slice
+    boundary, so it stays about one slice ahead of the hardware. That gap is
+    the whole timing budget, and it is MEASURED into late_us rather than
+    assumed, because it is what anything else running on this chip eats
+    into. On a Pico 2 W, servicing the wifi chip is exactly such a thing.
+
+    Note carefully what jitter can and cannot do here. It cannot move the
+    piston to the wrong place: PIO was handed an exact pulse count and will
+    emit it whatever Python is doing, so position stays arithmetic. What it
+    can do is deliver those pulses later than the profile asked, which
+    distorts the SHAPE of the beat, and the shape is the entire product. So
+    late_us is not a performance statistic, it is a correctness one.
     """
-    global clipped
+    global clipped, late_us
     prof = C.BEAT
     n = slices or len(prof)
     period = 60.0 / hr
     slice_s = period / (n - 1)
+    slice_us = int(slice_s * 1e6)
     full = int(round(C.BEAT_MM * C.STEPS_PER_MM))
     start = pos
     clipped = 0
+    worst = 0
     enable(True)
 
     want_prev = 0
+    t0 = time.ticks_us()
     for i in range(1, n):
         want = int(round(prof[i * (len(prof) - 1) // (n - 1)] * full))
         d = want - want_prev
@@ -243,8 +262,13 @@ def beat(hr=60.0, slices=None):
             if _zeroed:
                 _check(pos + d)
             _burst(d, abs(d) / slice_s)
-        else:
-            time.sleep_us(int(slice_s * 1e6))
+        due = time.ticks_add(t0, i * slice_us)
+        lag = time.ticks_diff(time.ticks_us(), due)
+        if lag < 0:
+            time.sleep_us(-lag)
+        elif lag > worst:
+            worst = lag
+    late_us = worst
     _wait_idle()
     drift = pos - start
     if drift:

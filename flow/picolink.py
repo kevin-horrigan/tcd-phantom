@@ -17,11 +17,58 @@ from serial.tools import list_ports
 CTRL_A, CTRL_B, CTRL_C, CTRL_D = b"\x01", b"\x02", b"\x03", b"\x04"
 
 
-def find_port():
+PICO_VID = 0x2E8A
+
+# Boards on this bench that all answer to VID 2E8A. Auto-detect used to take
+# the first match, which is fine with one board plugged in and is a way to
+# flash the wrong hardware with two. Serial numbers are the only thing that
+# tells them apart, so they are recorded here. Add to this as boards appear.
+KNOWN = {
+    "EFD8105DF76537C4": "motor Pico 2, TMC2209 driver",
+    "6B565B5B2DC9D43D": "Sentinel",
+    "2FE1876C8E855B9C": "XY-9 stage",
+}
+
+
+def pico_ports():
+    """Every VID 2E8A device, as (device, serial, label)."""
+    out = []
     for p in list_ports.comports():
-        if p.vid == 0x2E8A:
-            return p.device
-    raise SystemExit("no Pico found. Is it plugged in and running MicroPython?")
+        if p.vid == PICO_VID:
+            sn = (p.serial_number or "").upper()
+            out.append((p.device, sn, KNOWN.get(sn, "unknown board")))
+    return out
+
+
+def find_port(want=None):
+    """The one Pico to talk to. Refuses to guess between several.
+
+    Three boards on this bench share VID 2E8A: the motor Pico, the Sentinel
+    and the XY-9 stage. Taking the first match would eventually upload the
+    motor driver onto the Sentinel, so ambiguity is an error here, not a
+    coin flip. Pass a serial number, or --port, to settle it.
+    """
+    found = pico_ports()
+    if not found:
+        raise SystemExit(
+            "no Pico found.\n"
+            "  * is it plugged in, and is the cable a DATA cable? A charge-only\n"
+            "    lead powers the board and carries nothing.\n"
+            "  * a board with no firmware, or one held in BOOTSEL, appears as a\n"
+            "    USB DRIVE and not as a serial port. See pico/README.md.")
+    if want:
+        for dev, sn, label in found:
+            if sn == want.upper():
+                return dev
+        raise SystemExit("no board with serial %s. Present: %s"
+                         % (want, ", ".join(s for _, s, _ in found)))
+    if len(found) == 1:
+        return found[0][0]
+    lines = ["  %-6s %-18s %s" % (d, s, l) for d, s, l in found]
+    raise SystemExit(
+        "%d boards share VID 2E8A and I will not guess between them:\n%s\n"
+        "Pick one with --port, or by serial number."
+        % (len(found), "\n".join(lines)))
 
 
 class Pico:

@@ -3,7 +3,8 @@
 board is plugged into, not on the Pico.
 
     python pico_install.py                 find the board, upload, verify
-    python pico_install.py --port COM15    if auto-detect picks the wrong one
+    python pico_install.py --port COM15    pick the board explicitly
+    python pico_install.py --help          this text, and nothing else
     python pico_install.py --test          upload, then move the motor 2 mm
 
 Uploads pico/config.py and pico/drive.py, then imports drive on the board and
@@ -31,28 +32,46 @@ drive.off()
 """
 
 
-def arg(flag, default=None):
-    return sys.argv[sys.argv.index(flag) + 1] if flag in sys.argv else default
+FLAGS = {"--test": 0, "--port": 1, "--help": 0, "-h": 0}
+
+
+def parse():
+    """Strict. An unrecognised flag is an error, not something to ignore.
+
+    This script once took --help as "do the install", because it scanned
+    sys.argv for the flags it knew and ignored everything else. That is a bad
+    bargain anywhere and an unacceptable one here: the same leniency means a
+    mistyped --tset quietly does nothing while --test energises a stepper
+    bolted to a syringe. A flag either means what it says or stops the run.
+    """
+    opts, i, av = {}, 1, sys.argv
+    while i < len(av):
+        a = av[i]
+        if a not in FLAGS:
+            raise SystemExit("unknown argument: %s\n\n%s" % (a, __doc__))
+        if FLAGS[a]:
+            if i + 1 >= len(av):
+                raise SystemExit("%s needs a value\n\n%s" % (a, __doc__))
+            opts[a] = av[i + 1]
+            i += 2
+        else:
+            opts[a] = True
+            i += 1
+    if "--help" in opts or "-h" in opts:
+        print(__doc__)
+        raise SystemExit(0)
+    return opts
 
 
 def main():
+    opts = parse()
     for f in FILES:
         p = os.path.join(HERE, "pico", f)
         if not os.path.exists(p):
             raise SystemExit(
                 "missing %s. Run: python gen_pico_config.py" % p)
 
-    port = arg("--port")
-    if port is None:
-        port = picolink.find_port()
-        if port is None:
-            raise SystemExit(
-                "no Pico found.\n"
-                "  * is it plugged in, and is the cable a DATA cable?\n"
-                "  * does it have MicroPython on it? A board in BOOTSEL mode\n"
-                "    shows up as a USB DRIVE, not a serial port, and has to be\n"
-                "    flashed first. See pico/README.md.\n"
-                "  * if you know the port: --port COM15")
+    port = opts.get("--port") or picolink.find_port()
     print("board on %s" % port)
 
     pico = picolink.Pico(port)
@@ -86,7 +105,7 @@ def main():
         print("  soft limit %s mm, beat profile %s samples" % (soft, n))
         print("  pins STEP=%s DIR=%s EN=%s" % (st, dr, en))
 
-        if "--test" in sys.argv:
+        if opts.get("--test"):
             print("\n--- moving 2 mm and back, slowly. WATCH THE CARRIAGE ---")
             pico.exec("import drive; drive.selftest()", stream=True)
         else:
