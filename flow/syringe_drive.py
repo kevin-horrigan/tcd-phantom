@@ -91,11 +91,18 @@ HOLE_SHRINK = 0.24                   # printed hole is this much under drawn
 LM_OD, LM_L = 15.0, 24.0             # LM8UU
 
 # ------------------------------------------------------------------- syringe
-SYR_BARREL_D = 10.5                  # 3 mL barrel OD        <-- MEASURE
-SYR_BARREL_L = 56.0                  # flange face to tip    <-- MEASURE
-SYR_FLANGE_T = 2.5                   # finger flange         <-- MEASURE
-DISC_D, DISC_T = 11.0, 2.2           # plunger thumb disc    <-- MEASURE
-PLUNGER_ROD_D = 7.0                  # across the cross      <-- MEASURE
+# Measured on the BH Supplies BH5LL, 5 mL luer lock, 2026-11-10.
+SYR_BARREL_D = 14.0                  # barrel OD                   MEASURED
+DISC_D = 16.5                        # plunger thumb disc diameter MEASURED
+SYR_BARREL_L = 66.0                  # flange face to tip shoulder MEASURED
+SYR_FLANGE_T = 2.0                   # finger flange thickness     MEASURED
+DISC_T = 2.0                         # thumb disc thickness        MEASURED
+PLUNGER_ROD_D = 12.0                 # across the cross            MEASURED
+
+# Cross-check on the two measured numbers, because they constrain each other.
+# A 120.0 mm2 bore is 12.36 mm across. Against a 14.0 mm OD that is a 0.82 mm
+# barrel wall, which is exactly what a moulded polypropylene 5 mL barrel runs.
+# The two measurements corroborate rather than merely coexist.
 
 # The frame does not touch the barrel. It holds a pair of collars at a fixed
 # 14 mm, and the collars hold the barrel. The reason is asymmetric risk: a
@@ -108,15 +115,37 @@ PLUNGER_ROD_D = 7.0                  # across the cross      <-- MEASURE
 # team will want to change after the frame exists.
 # 16 and not 14, which is what this was first set to. 14 fits a 3 mL barrel
 # with a comfortable collar wall, and that looked fine until the syringe size
-# itself came up for review. A 5 mL barrel is about 12.5 mm, which leaves a
-# 0.75 mm collar wall at SADDLE_BORE 14: too thin to print. So a 14 mm frame
-# silently decides that this rig is a 3 mL rig forever, and a 3 mL barrel is
-# what forces the screw to 446 rpm. 16 keeps 3 mL and 5 mL both open for the
-# price of 1 mm of clearance to the 608, which still leaves 1.0 mm.
+# itself came up for review. 16 was chosen to keep 3 mL and 5 mL both open for
+# the price of 1 mm of clearance to the 608, which still leaves 1.0 mm.
 # See syringe_choice.py for why 5 mL is probably the right answer.
+#
+# That choice is now vindicated by measurement, and by more than it was argued
+# for. The 5 mL barrel was ESTIMATED at 12.5 mm when SADDLE_BORE was fixed. It
+# measures 14.0. Had the saddle been sized snugly to the estimate, at 14.0 or
+# even 14.5, the real syringe would not have entered the frame at all and four
+# hours of printing would have been scrap. Erring large cost a thin collar.
+# Erring tight would have cost the frame. That asymmetry was the whole reason
+# for the rule, and this is the case that exercised it.
 SADDLE_BORE = 16.0                   # frame and cap see this, never the barrel
 COLLAR_L = 12.0
-COLLAR_WALL_MIN = 1.2                # refuse to emit a collar thinner than this
+
+# 14.0 inside 16.0 leaves 1.0 mm of wall, under the 1.2 this once demanded.
+# 1.2 was a guess at "two perimeters and a bit" and it fires correctly here,
+# so the question is whether 1.0 is actually unprintable or merely thinner
+# than the guess. It is printable, for reasons specific to this part:
+#   * The collar prints standing on end, bore vertical. The wall is therefore
+#     a plain vertical tube: no bridge, no overhang, no infill involved.
+#   * At a 0.6 nozzle a 0.93 mm wall slices as two perimeters at 0.47 mm,
+#     which is inside the extrusion width the slicer will accept. 0.78 mm,
+#     which is what a generous slip fit would leave, does NOT: it lands
+#     between one perimeter and two and comes out as gap fill.
+#   * The load is the zip tie squeezing the collar into the saddle, so the
+#     wall is in compression, where a thin printed wall is at its strongest.
+# What 1.0 mm does cost is fit tolerance, and that is dealt with by splitting
+# the ring rather than by thinning it further. See collar().
+COLLAR_WALL_MIN = 0.9                # refuse to emit a collar thinner than this
+COLLAR_GRIP = 0.10                   # printed bore this much UNDER the barrel
+COLLAR_SLIT = 1.6                    # width of the split, at the top
 
 # -------------------------------------------------------------------- layout
 TRAVEL = 45.0                        # 8.5 mm is the beat, the rest is priming
@@ -140,14 +169,18 @@ FIT = 0.35
 # ------------------------------------------------- the beat, and what it costs
 # BH Supplies BH5LL, 5 mL luer lock, 100 pack. Bought 2026-11-09.
 #
-# The bore area is NOMINAL until measured, and there is a better way to measure
-# it than calipering the inside of a barrel. Draw to the 5 mL mark, read the
-# distance from the 1 mL mark to the 5 mL mark with calipers, and divide:
-#     BORE_A = 4000 mm3 / (that distance in mm)
-# That gives the area the fluid actually sees, including whatever the moulding
-# really is, which is the number this model wants. Everything below derives
-# from it, so correcting it here corrects the whole design.
-BORE_A = 114.2                       # mm2, 5 mL barrel     <-- MEASURE, see above
+# The bore area is MEASURED, and not with calipers on the inside of a barrel,
+# which has draft and is unreachable anyway. It is read between graduations,
+# because that is the dimension the manufacturer actually guarantees:
+#     BORE_A = (volume between two marks, in mm3) / (distance between them, mm)
+# That gives the area the fluid sees, including whatever the moulding really
+# is. Everything below derives from it, so this one number sets the design.
+#
+# Measured 2026-11-10 on the BH5LL: the 1 mL mark to the 4 mL mark is 25 mm.
+#     3000 mm3 / 25 mm = 120.0 mm2,  a 12.36 mm effective bore
+# That is 5% above the 114.2 nominal assumed before, which means a slightly
+# shorter stroke, a slightly slower peak, and 2.1 mm less usable travel.
+BORE_A = 3000.0 / 25.0               # mm2, 5 mL barrel, MEASURED
 
 SYR_CAPACITY_ML = 5.0                # label volume of the barrel
 BEAT_ML = 0.5                        # per beat, the pulsatile component only
@@ -221,11 +254,33 @@ X_CARR_FRONT = X_CARR_MAX + CARRIAGE_L               # front face, fully extende
 # One end rib does two jobs: 608 pocket low, syringe brace high. The syringe
 # finger flange butts its -X face and so hangs back by its own thickness, which
 # is what the carriage front face actually has to clear.
-X_RIB = X_CARR_FRONT + SYR_FLANGE_T + 1.5
+# As with FRAME_SADDLE_L below: the rib is printed. It was placed for a
+# guessed 2.5 mm finger flange and the real flange measured 2.0, so the model
+# keeps the measured truth in SYR_FLANGE_T and builds the rib where the rib
+# actually is. The 0.5 mm difference is axial slack behind the flange, and it
+# is slack in the safe direction. A flange THICKER than the as-built guess
+# would not seat at all, which is what the check in check_drive.py asserts.
+FRAME_FLANGE_T = 2.5                 # as built  <-- reprint required to change
+X_RIB = X_CARR_FRONT + FRAME_FLANGE_T + 1.5
 X_RIB_BACK = X_RIB + RIB_T
 X_DISC = X_CARR_FRONT - FRONT_W - DISC_T / 2         # disc at full extension
 X_TIP = X_RIB_BACK + SYR_BARREL_L
-X_END = X_TIP + 6.0
+
+# The frame is PRINTED. It came off the bed on 2026-11-10 built to a guessed
+# 56 mm barrel, and the barrel then measured 66. The model must keep telling
+# the truth about the syringe, so SYR_BARREL_L is 66 and X_TIP moved with it,
+# but the saddle, the strap slots and the end of the plate are features of a
+# part that already exists and cannot follow. They are pinned here instead.
+#
+# Running the model with these free would quietly regenerate a frame 10 mm
+# longer than the one on the bench and then certify it, which is the failure
+# mode where a harness passes a part nobody has. Pinning them means every
+# check below is run against the frame that actually exists.
+#
+# Changing FRAME_SADDLE_L means printing a new frame. Nothing else does.
+FRAME_SADDLE_L = 56.0                # as built  <-- reprint required to change
+X_SADDLE_END = X_RIB_BACK + FRAME_SADDLE_L
+X_END = X_SADDLE_END + 6.0
 HALF_W = ROD_SPACING / 2 + LM_OD / 2 + 5.0
 
 SPRING_POST_D = 5.0
@@ -282,13 +337,13 @@ def frame():
                                      y=dy, z=SCREW_H))
 
     # Barrel saddle: a half-round channel on the syringe axis, strap slots.
-    sad = box((X_RIB_BACK + 3.0, X_TIP - 6.0), (-13.0, 13.0), (0.0, SYR_H))
+    sad = box((X_RIB_BACK + 3.0, X_SADDLE_END - 6.0), (-13.0, 13.0), (0.0, SYR_H))
     sad = diff(sad, cyl_x(SADDLE_BORE / 2 + FIT,
-                          (X_RIB_BACK + 2.0, X_TIP), z=SYR_H))
-    sad = diff(sad, box((X_RIB_BACK + 2.0, X_TIP),
+                          (X_RIB_BACK + 2.0, X_SADDLE_END), z=SYR_H))
+    sad = diff(sad, box((X_RIB_BACK + 2.0, X_SADDLE_END),
                         (-(SADDLE_BORE / 2 + FIT), SADDLE_BORE / 2 + FIT),
                         (SYR_H, SYR_H + 40)))
-    for xs in (X_RIB_BACK + 8.0, X_TIP - 16.0):
+    for xs in (X_RIB_BACK + 8.0, X_SADDLE_END - 16.0):
         for dy in (-11.5, 11.5):
             sad = diff(sad, box((xs, xs + 4.0), (dy - 1.6, dy + 1.6), (-1, SYR_H + 10)))
     body = union(body, sad)
@@ -356,10 +411,26 @@ def fit_coupon():
 
 
 def collar():
-    """Barrel adapter. Fixed 14 mm outside, measured barrel inside.
+    """Barrel adapter: SADDLE_BORE outside, the measured barrel inside.
 
-    Slides on from the tip end, so it is a solid ring and not a split one.
-    Print two. They are what the zip-tie straps clamp down on.
+    Split, with the slit at the top. Print two. They are what the zip-tie
+    straps clamp down on, and they are the only part that knows the barrel OD.
+
+    The split is not decoration. A solid ring at this wall has to hold a bore
+    tolerance it cannot hold: 2.0 mm of diametral room has to cover BOTH the
+    clearance that lets it slide on and the wall that carries the strap, and
+    those two demands take the same material. Drawn loose the wall falls to
+    0.78 mm and slices as gap fill; drawn tight the collar jams on a barrel
+    that carries a moulding seam. Splitting it removes the trade entirely. The
+    bore is drawn UNDER the barrel by COLLAR_GRIP so the collar snaps on and
+    stays put while the syringe is handled, and the slit absorbs both the
+    interference and whatever the real barrel does, so fit stops depending on
+    print accuracy. It also means the collar comes off sideways rather than
+    threading 12 mm over the luer tip, which is what you want at 2 a.m. when
+    the syringe needs changing.
+
+    Slit at the TOP because that is where the saddle is open. Pressing the
+    assembly down into the channel closes the slit rather than spreading it.
     """
     wall = (SADDLE_BORE - SYR_BARREL_D) / 2.0
     if wall < COLLAR_WALL_MIN:
@@ -368,8 +439,12 @@ def collar():
             "too close to SADDLE_BORE %.1f. Raise SADDLE_BORE and reprint the "
             "frame, or this syringe needs a different holder."
             % (wall, COLLAR_WALL_MIN, SADDLE_BORE))
+    bore_r = (SYR_BARREL_D - COLLAR_GRIP + HOLE_SHRINK) / 2.0
     ring = cyl_x(SADDLE_BORE / 2.0, (0.0, COLLAR_L))
-    ring = diff(ring, cyl_x(SYR_BARREL_D / 2.0 + 0.15, (-1.0, COLLAR_L + 1.0)))
+    ring = diff(ring, cyl_x(bore_r, (-1.0, COLLAR_L + 1.0)))
+    ring = diff(ring, box((-1.0, COLLAR_L + 1.0),
+                          (-COLLAR_SLIT / 2.0, COLLAR_SLIT / 2.0),
+                          (bore_r - 1.0, SADDLE_BORE)))
     return ring
 
 

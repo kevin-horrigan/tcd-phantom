@@ -108,19 +108,57 @@ check("collar clears the screw bearing", sep > 0.0,
 # scrapped the frame. It has to be printable and it has to fit both ways.
 # Where the straps fall, and therefore where the collars sit. Defined once,
 # here, because several checks below need it.
-STRAP_X = (S.X_RIB_BACK + 8.0, S.X_TIP - 16.0)
+STRAP_X = (S.X_RIB_BACK + 8.0, S.X_SADDLE_END - 16.0)
 COLLAR_X = tuple(xs + 2.0 - S.COLLAR_L / 2.0 for xs in STRAP_X)
 
-wall = (S.SADDLE_BORE - S.SYR_BARREL_D) / 2.0
+_bore_drawn = S.SYR_BARREL_D - S.COLLAR_GRIP + S.HOLE_SHRINK
+wall = (S.SADDLE_BORE - _bore_drawn) / 2.0
 check("collar wall is printable", wall >= S.COLLAR_WALL_MIN,
-      "%.2f mm wall, %.1f mm barrel inside a %.1f mm bore"
-      % (wall, S.SYR_BARREL_D, S.SADDLE_BORE))
+      "%.2f mm wall, drawn bore %.2f inside a %.1f mm OD, two perimeters at "
+      "%.2f mm" % (wall, _bore_drawn, S.SADDLE_BORE, wall / 2.0))
 
-# The frame is about to be printed and the saddle bore cannot be changed
-# afterwards, so it has to admit every barrel we might plausibly move to. A
-# 5 mL barrel halves the screw speed, which is the single biggest lever on
-# the whole motor problem, and it would be lost for good to a 14 mm bore.
-FUTURE_BARRELS = (("3 mL", 10.5), ("5 mL", 12.5))
+# The collar is the one part whose fit is deliberately an interference, so the
+# shrink that every other hole has to defeat is being used on purpose here.
+# Both bounds matter: too little and the collar falls off the barrel while the
+# syringe is handled, too much and the slit will not close under the strap.
+_bore_printed = _bore_drawn - S.HOLE_SHRINK
+_grip = S.SYR_BARREL_D - _bore_printed
+check("collar snaps onto the barrel rather than sliding",
+      0.05 <= _grip <= 0.25,
+      "drawn %.2f prints about %.2f on a %.1f mm barrel, %.2f mm interference"
+      % (_bore_drawn, _bore_printed, S.SYR_BARREL_D, _grip))
+
+check("collar still fits the saddle the frame actually has",
+      S.SADDLE_BORE / 2.0 <= S.SADDLE_BORE / 2.0 + S.FIT,
+      "collar OD %.1f in a channel cut at %.1f, %.2f mm radial room"
+      % (S.SADDLE_BORE, S.SADDLE_BORE + 2 * S.FIT, S.FIT))
+
+# A slit that stops short of the OD is a ring with a groove in it, and it has
+# none of the compliance the split was added for. Sweep a thin probe through
+# the full wall thickness at the top, on the bore axis, and require the collar
+# to contain none of it. Containment by ray casting would need rtree, which is
+# not installed, so this asks the boolean engine the model is already built
+# with: the answer has to be exactly zero, not merely small.
+_slit_probe = S.box((2.0, S.COLLAR_L - 2.0), (-0.5, 0.5),
+                    (_bore_drawn / 2.0, S.SADDLE_BORE / 2.0))
+_left = trimesh.boolean.intersection([parts["collar"], _slit_probe],
+                                     engine="manifold")
+check("collar slit runs right through the wall at the top",
+      _left.volume < 1e-6,
+      "%.6f mm3 of material across the full %.2f mm wall on the bore axis, "
+      "so the C can close" % (_left.volume, wall))
+
+# The frame is printed and the saddle bore can no longer be changed, so it has
+# to admit every barrel we might plausibly move to. A 5 mL barrel halves the
+# screw speed, which is the single biggest lever on the whole motor problem,
+# and it would be lost for good to a 14 mm bore.
+#
+# The 5 mL entry was an ESTIMATE of 12.5 mm when the frame was committed. It
+# measured 14.0 on 2026-11-10, so the estimate was 1.5 mm light and a saddle
+# sized to it would have rejected the real part. The measured value replaces
+# it here rather than sitting beside it, because leaving a refuted estimate in
+# a table of constraints is how it gets believed a second time.
+FUTURE_BARRELS = (("3 mL", 10.5), ("5 mL measured", 14.0))
 blocked = [n for n, od in FUTURE_BARRELS
            if (S.SADDLE_BORE - od) / 2.0 < S.COLLAR_WALL_MIN]
 check("saddle bore keeps the plausible syringe sizes open", not blocked,
@@ -138,7 +176,28 @@ min_barrel = (STRAP_X[1] + 2.0 + S.COLLAR_L / 2.0) - S.X_RIB_BACK
 check("frame works for any barrel longer than the far strap",
       S.SYR_BARREL_L >= min_barrel,
       "far collar ends %.0f mm past the flange, so any barrel over %.0f mm "
-      "works. 3 mL is %.0f" % (min_barrel, min_barrel, S.SYR_BARREL_L))
+      "works. The measured barrel is %.0f"
+      % (min_barrel, min_barrel, S.SYR_BARREL_L))
+
+# This is the one that matters now, because the frame is no longer a drawing.
+# It was printed to a GUESSED 56 mm barrel and the real one measured 66. Both
+# collars still have to land on barrel, with the extra length simply hanging
+# past the saddle. Checking SYR_BARREL_L against the model's own saddle would
+# be circular once FRAME_SADDLE_L is pinned, so this asks the question the
+# other way round: take the saddle that exists, and put the real barrel in it.
+for i, xs in enumerate(STRAP_X):
+    c0 = xs + 2.0 - S.COLLAR_L / 2.0
+    check("printed frame: collar %d grips the measured barrel" % (i + 1),
+          c0 >= S.X_RIB_BACK and c0 + S.COLLAR_L <= S.X_TIP,
+          "collar X %.1f..%.1f inside a barrel running X %.1f..%.1f"
+          % (c0, c0 + S.COLLAR_L, S.X_RIB_BACK, S.X_TIP))
+
+_sad_end = S.X_SADDLE_END - 6.0
+check("barrel overhang past the saddle is clearance, not interference",
+      S.X_TIP > _sad_end and S.X_TIP > S.X_END,
+      "tip stands %.1f mm past the saddle and %.1f mm past the end of the "
+      "plate, so the luer and its tubing are in free air"
+      % (S.X_TIP - _sad_end, S.X_TIP - S.X_END))
 
 # Both motors have to bolt to the same plate, because which one ends up
 # driving it is still open and the plate is on the frame.
@@ -151,7 +210,7 @@ check("motor plate takes a standard NEMA 17 face",
 # Each collar is centred under a strap slot, which is what clamps it. The
 # straps are the only thing locating the barrel axially, so the collar has to
 # actually be under one, and inside the saddle at both ends.
-sad_lo, sad_hi = S.X_RIB_BACK + 3.0, S.X_TIP - 6.0
+sad_lo, sad_hi = S.X_RIB_BACK + 3.0, S.X_SADDLE_END - 6.0
 check("collars sit inside the saddle under the straps",
       all(x >= sad_lo - 0.01 and x + S.COLLAR_L <= sad_hi + 0.01
           for x in COLLAR_X),
@@ -184,7 +243,7 @@ check("shelf holes miss the carriage sweep", clear,
 # The straps sit at |y| 11.5 and the shelf holes at y 35, so nothing actually
 # touches, but a zip-tie tail needs somewhere to go and the test is free.
 others = [S.X_MOTOR_BACK + 14.0, S.X_END - 16.0,
-          S.X_RIB_BACK + 8.0, S.X_TIP - 16.0]
+          S.X_RIB_BACK + 8.0, S.X_SADDLE_END - 16.0]
 gap = min(abs(a - b) for a in S.TRAY_HOLES_X for b in others)
 check("shelf holes stand off the straps and mounting holes", gap > 5.0,
       "nearest other feature is %.1f mm away in X" % gap)
@@ -317,3 +376,15 @@ fig.text(0.5, 0.015,
 fig.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.09, wspace=0.0)
 fig.savefig(os.path.join(HERE, "syringe-drive.png"), facecolor="white")
 print("wrote syringe-drive.png")
+
+
+# The rib was printed for a guessed 2.5 mm flange and the real one is 2.0.
+# Slack behind the flange is harmless, because the piston's reaction pushes
+# the barrel forward into the rib and the straps hold it. A flange THICKER
+# than the as-built guess is the opposite case: the barrel would not seat
+# against the rib at all and the whole pulse would go into moving the syringe.
+check("printed frame: the measured flange still seats against the rib",
+      S.SYR_FLANGE_T <= S.FRAME_FLANGE_T,
+      "rib placed for %.1f mm, flange measures %.1f mm, %.1f mm of axial "
+      "slack taken up by the straps"
+      % (S.FRAME_FLANGE_T, S.SYR_FLANGE_T, S.FRAME_FLANGE_T - S.SYR_FLANGE_T))
