@@ -232,8 +232,8 @@ def report():
           % (name, rho, pa / PSI, head_mm(pa),
              head_mm(0.075 * PSI) / max(head_mm(pa), 1e-9)))
     A("")
-    A("  Acetal on a 3 mm seat costs %.0f mm of head against the 91050's %.0f."
-      % (head_mm(ball_crack(1410.0)), head_mm(0.075 * PSI)))
+    A("  Acetal on a %.2f mm seat costs %.1f mm of head against the 91050's %.0f."
+      % (SEAT_D, head_mm(ball_crack(1410.0)), head_mm(0.075 * PSI)))
     A("  Stainless is the one to avoid: steel is eight times the fluid density")
     A("  and lands back among the catalog valves.")
     A("")
