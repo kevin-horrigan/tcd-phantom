@@ -136,7 +136,13 @@ BOM = [
      "systole. Use these for bring-up and the compliance sweep"),
     ("INSTRUMENTS", 2, "MPX5050GP", "0-50 kPa gauge, single port, ~1 ms",
      "CHECK",
-     "P1 and P2. ALREADY SPECIFIED in GROUP-2_phase0-bench-rig.md with the "
+     "P1 and P2, and the manometer does NOT replace them: it is throttled "
+     "to 0.05 Hz so it cannot follow the pulse, which is what makes it a "
+     "clean mean. P2 measures the waveform reaching the block, which is the "
+     "deliverable. P1 is the only instrument that can tell a bad P2 from a "
+     "bad PISTON, because the step counter is open loop and reports what "
+     "was commanded, not what the fluid did. ALREADY SPECIFIED in "
+     "GROUP-2_phase0-bench-rig.md with the "
      "reasoning attached, including buy two, one each side of the compliance "
      "chamber, which is P1 and P2 under other names. GP not DP: on the "
      "dual-port part only the P1 face carries the gel and P2 is bare "

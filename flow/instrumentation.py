@@ -188,6 +188,51 @@ def main():
     A("")
 
     # ----------------------------------------------------------- standpipe
+    A("DOES THE MANOMETER REPLACE P1 AND P2")
+    A("  No, and not because of accuracy. The three of them measure three")
+    A("  different things and only one pair overlaps at all.")
+    A("")
+    A("  %-14s %-22s %s" % ("", "measures", "and would be missed because"))
+    A("  %-14s %-22s %s"
+      % ("manometer", "the MEAN, at the tee",
+         "it sets R1. 1 - reading/jar IS"))
+    A("  %-14s %-22s %s" % ("", "", "the forward fraction, and nothing"))
+    A("  %-14s %-22s %s" % ("", "", "else reads that at all"))
+    A("  %-14s %-22s %s"
+      % ("P2", "the WAVEFORM at the",
+         "it is the deliverable. The shape"))
+    A("  %-14s %-22s %s" % ("", "block's inlet", "that reaches the phantom is what"))
+    A("  %-14s %-22s %s" % ("", "", "the whole rig exists to produce"))
+    A("  %-14s %-22s %s"
+      % ("P1", "the WAVEFORM before",
+         "it is the only thing that can tell"))
+    A("  %-14s %-22s %s" % ("", "the plenum", "a bad P2 from a bad PISTON"))
+    A("")
+    A("  The manometer cannot stand in for either transducer, because it is")
+    A("  deliberately throttled to 0.05 Hz so it CANNOT follow the pulse.")
+    A("  That is not a shortcoming, it is what makes it a clean mean.")
+    A("")
+    A("  AND P1 IS LESS OPTIONAL THAN IT LOOKS, for a reason that is not the")
+    A("  one in the phase-0 document. That document wanted two sensors to")
+    A("  measure the plenum's attenuation in one run instead of moving one")
+    A("  sensor and re-running, which was right for a drifting peristaltic.")
+    A("  With a commanded piston the better argument is different:")
+    A("")
+    A("  THE STEP COUNTER IS OPEN LOOP. It reports what the firmware asked")
+    A("  for, not what the fluid did. If the syringe leaks past its seal, or")
+    A("  air gets into the barrel, or the plunger creeps in the rod clamp,")
+    A("  every count is still perfect and every volume this file quotes is")
+    A("  quietly wrong. The entire lost-motion effort in syringe_drive, the")
+    A("  anti-backlash nut and the rod clamp, exists because displacement")
+    A("  can be lost between the motor and the fluid. P1 is the only")
+    A("  instrument on the bench that would see it happen.")
+    A("")
+    A("  IF ONE HAS TO GO it is P1, and you keep the manometer and P2: the")
+    A("  manometer to set the loop, P2 to measure the thing being delivered.")
+    A("  But P1 is thirty-five dollars against a rig nobody has run, and the")
+    A("  failure it catches is invisible to everything else.")
+    A("")
+
     A("WHAT THE MANOMETER IS MADE OF")
     A("  THREE PARTS, ALL OF THEM AT ONCE. Not a choice between them.")
     A("")
