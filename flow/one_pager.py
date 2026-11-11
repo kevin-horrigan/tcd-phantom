@@ -65,9 +65,9 @@ def main():
     pulse_mm = 508.0            # from instrumentation.py's first-order estimate
     peak_mmhg = mmhg(mean_tee + pulse_mm)
 
-    fig = plt.figure(figsize=(16.0, 10.6), dpi=150)
+    fig = plt.figure(figsize=(16.0, 12.4), dpi=150)
     fig.patch.set_facecolor("white")
-    ax = fig.add_axes((0.015, 0.495, 0.970, 0.425))
+    ax = fig.add_axes((0.015, 0.560, 0.970, 0.375))
     ax.set_xlim(0, 10.6)
     ax.set_ylim(-3.6, 6.4)
     ax.axis("off")
@@ -123,7 +123,8 @@ def main():
     ax.annotate("", xy=(0.12, 0.0), xytext=(0.12, 4.10),
                 arrowprops=dict(arrowstyle="<->", color=COOL, lw=1.8))
     lab(0.24, 2.05, "1.2 m", COOL, 14, ha="left", va="center", weight="bold")
-    lab(0.10, -0.70, "that height is\nthe whole push:\n%.0f mmHg" % mmhg(TANK),
+    lab(0.10, -0.70, "that height is\nthe whole push:\n%.0f mmHg\n%.2f psi"
+        % (mmhg(TANK), H.RHO * H.G * TANK * 1e-3 / 6894.757),
         COOL, 10, ha="left", va="top")
     pipe(X_DROP, X_R1A)
     # No badge on the vertical drop: the horizontal run right below it
@@ -154,8 +155,10 @@ def main():
     lab(X_MANO - 0.42, 3.05, "MANOMETER", GOLD, 11.5, weight="bold")
     lab(X_MANO - 0.42, 2.92,
         "a clear tube, open at the top.\n"
-        "Fluid stands at 405 mm when\n"
-        "R1 is trimmed right.", MUTE, 9.5, va="top")
+        "Stands at 405 mm when R1 is right.\n"
+        "700 mm tall, top returned to the\n"
+        "reservoir so a shut R2 spills there.",
+        MUTE, 9.5, va="top")
     bore((X_R1B + X_P1) / 2 + 0.28, 0.30, QTR, COOL)
     vpipe(X_P1, -1.35, 0.0, col=HOT)
     bore(X_P1 + 0.40, -0.85, QTR, HOT)
@@ -233,7 +236,8 @@ def main():
     ax.plot([X_R2 - 0.16, X_R2, X_R2 + 0.16], [-0.28, -0.05, -0.28],
             color=INK, lw=2.2, zorder=6)
     lab(X_R2, 0.55, "R2", INK, 12, weight="bold")
-    lab(X_R2, -0.55, "a screw clamp.\nTHE ONLY KNOB\nyou get to turn",
+    lab(X_R2, -0.55, "190 mm of the kit's 1/4 in\ntube with a screw clamp.\n"
+        "THE ONLY KNOB you turn.\ndrops 13 mmHg, 0.25 psi",
         INK, 9.5, va="top")
 
     # ------------------------------------------------- reservoir and pump
@@ -260,6 +264,52 @@ def main():
     for x in (1.35, 2.85, 5.00, 8.30, 9.45):
         ax.plot([x], [0.0], marker=">", ms=8, color="white", zorder=9,
                 markeredgecolor="white")
+
+    # ------------------------------------------------- the pressure profile
+    # Every station labelled in both units, on its own strip rather than on
+    # the pipe. The runs already carry a bore badge each and a second badge
+    # on the same line would make the drawing unreadable.
+    pp = fig.add_axes((0.015, 0.462, 0.970, 0.088), sharex=ax)
+    STATIONS = [
+        (X_DROP, 1200.0, "the jar"),
+        (X_R1A, 1191.6, ""),
+        (X_R1B, 411.6, "after R1"),
+        (X_P1, 405.3, "P1"),
+        (X_PLEN, 399.0, ""),
+        (X_P2, 396.0, "P2"),
+        (X_RED, 392.6, ""),
+        (X_IN, 265.9, "into the block"),
+        (X_OUT, 198.3, "out of it"),
+        (X_R2, 189.9, ""),
+        (X_R2 + 0.12, 21.0, "after R2"),
+        (X_RES, 0.0, "reservoir"),
+    ]
+    xs = [s[0] for s in STATIONS]
+    ys = [s[1] for s in STATIONS]
+    pp.fill_between(xs, 0, ys, color="#2e6fb4", alpha=0.13)
+    pp.plot(xs, ys, color=COOL, lw=2.4, solid_capstyle="round")
+    for x, y, lab in STATIONS:
+        pp.plot([x], [y], "o", ms=4.5, color=COOL, zorder=6)
+        if not lab:
+            continue
+        pa = y * 1e-3 * 1037.0 * 9.80665
+        up = lab in ("the jar", "P1", "into the block", "after R2")
+        pp.text(x, y + (115 if up else -115),
+                "%s\n%.0f mm   %.0f mmHg   %.2f psi"
+                % (lab, y, pa / 133.322, pa / 6894.757),
+                ha="center", va="bottom" if up else "top", fontsize=8.0,
+                color=INK, linespacing=1.4)
+    pp.set_ylim(-640, 1560)
+    pp.set_yticks([])
+    pp.set_xticks([])
+    for sp in ("top", "right", "bottom", "left"):
+        pp.spines[sp].set_visible(False)
+    # Heading below the curve on the left, where the profile has already
+    # fallen away. At the top it landed on the jar's own label.
+    pp.text(0.02, -300, "PRESSURE ALONG THE LOOP", fontsize=10,
+            color=COOL, fontweight="bold", va="center")
+    pp.text(0.02, -510, "mm of fluid, mmHg and psi, against the reservoir",
+            fontsize=8.5, color=MUTE, va="center")
 
     fig.text(0.5, 0.950,
              "The flow loop on one page", fontsize=19, ha="center",
@@ -301,7 +351,7 @@ def main():
          "for the sweep, LLDPE 5x stiffer than braided PVC.\n"
          "Never silicone, it soaks up the heartbeat.", HOT),
         ("A screw clamp or needle valve for R2, not a ball\n"
-         "valve. Two 0-50 kPa single-inlet sensors. A scale.", INK),
+         "valve. Two MPX5050GP sensors. A scale.", INK),
     ])
 
     panel(0.385, "WHERE THE PUSH GOES", [
@@ -337,8 +387,8 @@ def main():
     panel(0.700, "WHAT IT SHOULD DO", [
         ("250 mL a minute through the block, which is\n"
          "60 cm/s in a 3 mm lumen.", INK),
-        ("About 70 mmHg at the piston at peak, and\n"
-         "about 30 mmHg between beats.", INK),
+        ("At the piston: 70 mmHg / 1.35 psi at peak,\n"
+         "30 mmHg / 0.60 psi between beats.", INK),
         ("60 beats a minute, half a millilitre each.", INK),
     ])
     fig.text(0.700, 0.212, "THE PLENUM IS THE EXPERIMENT", fontsize=12.5,
