@@ -321,25 +321,29 @@ def main():
          "about 30 mmHg between beats.", INK),
         ("60 beats a minute, half a millilitre each.", INK),
     ])
-    fig.text(0.700, 0.212, "THE ONE THING STILL MISSING", fontsize=12.5,
+    fig.text(0.700, 0.212, "THE PLENUM IS THE EXPERIMENT", fontsize=12.5,
              color=HOT, fontweight="bold")
-    fig.text(0.700, 0.178,
-             "How much air goes in the plenum. Nobody has\n"
-             "worked it out yet, and it decides whether the\n"
-             "waveform looks like an artery. Without it the\n"
-             "loop is too peaky: PI 1.55 against a normal\n"
-             "0.8 to 1.2.",
+    fig.text(0.700, 0.190,
+             "A 60 mL syringe, tip down, plunger in and\n"
+             "blocked so it cannot creep. Build for 10 to 50\n"
+             "mL of air, start at 20, where Greaby landed.\n"
+             "Sweeping it against R2 is the deliverable:\n"
+             "with no air the loop is too peaky, PI 1.55.",
              fontsize=10.5, color=HOT, va="top", linespacing=1.5)
 
-    fig.text(0.5, 0.030,
-             "THREE RULES THAT ARE EASY TO BREAK BY ACCIDENT",
+    fig.text(0.5, 0.044,
+             "FOUR RULES THAT ARE EASY TO BREAK BY ACCIDENT",
              fontsize=10.5, color=INK, ha="center", fontweight="bold")
-    fig.text(0.5, 0.012,
+    fig.text(0.5, 0.026,
              "Nothing tees into the straight 3 mm run or the block.    "
              "The pump only refills the jar and never touches the loop.    "
              "The pump discharges below the surface, or it whips air into "
-             "the fluid and air ruins the Doppler.",
-             fontsize=10, color=MUTE, ha="center")
+             "the fluid and air ruins the Doppler.\n"
+             "The reservoir's water line sits LEVEL WITH THE BLOCK. The push "
+             "is jar surface to reservoir surface, so a bucket on the floor "
+             "is not tidying up, it is 60 percent more flow than the drawing "
+             "says.",
+             fontsize=10, color=MUTE, ha="center", linespacing=1.6)
 
     # A column that outgrows the page should say so rather than run off it.
     # Adding the bore conversions pushed the buy list past the footer and
