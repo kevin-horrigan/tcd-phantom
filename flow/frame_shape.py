@@ -1,5 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Wider and shorter: what the frame's length is actually made of.
+"""NOT TAKEN. The frame is not being reprinted, decided 2026-11-11.
+
+This file is kept because the breakdown of where the length goes is worth
+having if the frame is ever rebuilt, and because its one real finding stands
+on its own: of "wider and shorter", WIDER is the warp fix and SHORTER is not.
+Shortening takes length off the numerator and exactly as much first-layer
+area off the denominator, so it does nothing for warp at all.
+
+Nothing here is a plan. syringe_drive.FRAME_AS_BUILT pins the printed
+geometry and check_drive fails if any of it moves.
+
+Wider and shorter: what the frame's length is actually made of.
 
     python frame_shape.py   ->  frame-shape.png + the tables below
 

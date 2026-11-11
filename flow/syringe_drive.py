@@ -838,3 +838,42 @@ if __name__ == "__main__":
         m.export(os.path.join(OUT, n + ".stl"))
     print(report(parts))
     print("\nwrote %d STL to %s" % (len(parts), OUT))
+
+
+# ---------------------------------------------------- the frame, as printed
+# Decided 2026-11-11: the PLA frame on the bench stays. It is not reprinted,
+# which means its geometry is no longer a design choice and every part that
+# mates with it has to accept what was actually made.
+#
+# Two constants already carried an "as built" comment. That was never enough,
+# because a comment does not stop anything. ROD_SPACING is the one that
+# matters most and had no marking at all: the carriage's two LM8UU bores sit
+# on it, and changing it while designing the carriage would produce a part
+# that verifies perfectly against the model and does not go on the rods.
+#
+# So the whole set is recorded, and check_drive compares the live values
+# against it on every run. Changing any of these is now a deliberate act with
+# a failing check attached, not a quiet edit.
+FRAME_AS_BUILT = {
+    "printed": "PLA, 2026-11-09",
+    "BASE_T": 6.0, "BEAR_OD": 22.0, "BEAR_W": 7.0, "HALF_W": 40.5,
+    "MOTOR_BC": 31.0, "MOTOR_BOSS_D": 22.5, "MOTOR_BOSS_DEEP": 2.5,
+    "MOTOR_SQ": 42.3, "ROD_D": 8.0, "ROD_SPACING": 56.0,
+    "SADDLE_BORE": 16.0, "SCREW_H": 26.0, "SPRING_POST_D": 5.0,
+    "SYR_H": 46.0, "X_END": 184.0, "X_MOTOR_BACK": 7.0, "X_RIB": 113.0,
+    "X_RIB_BACK": 122.0, "X_SADDLE_END": 178.0, "TRAVEL": 45.0,
+    "CARRIAGE_L": 30.0, "FRAME_SADDLE_L": 56.0, "FRAME_FLANGE_T": 2.5,
+    "RIB_T": 9.0, "COUPLER_L": 25.0, "WALL_T": 7.0, "X_CARR_MIN": 34.0,
+}
+
+
+def frame_drift():
+    """Which as-built constants no longer match what this module computes."""
+    out = []
+    for k, v in FRAME_AS_BUILT.items():
+        if k == "printed":
+            continue
+        now = globals().get(k)
+        if now is None or abs(float(now) - float(v)) > 1e-6:
+            out.append((k, v, now))
+    return out

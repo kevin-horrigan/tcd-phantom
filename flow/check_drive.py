@@ -578,3 +578,26 @@ check("every material in the table is complete or deliberately blank",
       "%d materials listed, %d measured"
       % (len(S.MATERIALS),
          sum(1 for m in S.MATERIALS.values() if m["fixed"] is not None)))
+
+
+# ------------------------------------------------- the frame is not reprinted
+# Decided 2026-11-11. The PLA frame stays, so its geometry stopped being a
+# design choice. ROD_SPACING is the dangerous one: the carriage's two LM8UU
+# bores sit on it, and changing it while designing the carriage gives a part
+# that verifies perfectly against the model and will not go on the rods.
+_drift = S.frame_drift()
+check("nothing has moved under the frame that is already printed",
+      not _drift,
+      "; ".join("%s was %s, model now says %s" % d for d in _drift)
+      if _drift else
+      "%d constants pinned to the %s frame"
+      % (len(S.FRAME_AS_BUILT) - 1, S.FRAME_AS_BUILT["printed"]))
+
+# PLA frame, ABS everything else. Worth a check because the two materials
+# will not shrink alike and the joints have to be the forgiving direction.
+check("the mixed-material joints all run the forgiving way",
+      S.MATERIAL != S.FRAME_AS_BUILT["printed"].split(",")[0],
+      "frame is %s, new parts are %s. The collar is zip-tied into the "
+      "saddle rather than pressed, and the carriage rides steel rods, so "
+      "nothing presses ABS into PLA"
+      % (S.FRAME_AS_BUILT["printed"].split(",")[0], S.MATERIAL))
