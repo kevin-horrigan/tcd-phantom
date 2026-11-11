@@ -54,6 +54,7 @@ C_CARRIAGE = "#4d7699"
 C_COLLAR = "#8c6b4d"
 C_CAP = "#a89e90"
 C_CLAMP = "#75618a"
+C_LOCK = "#6f8c6a"
 C_STEEL = "#949aa3"
 C_SCREW = "#b89a40"
 C_MOTOR = "#434850"
@@ -112,9 +113,16 @@ def zip_ties():
 def parts():
     P = S.build()
     carr = at(P["carriage"], dx=CARR_AT)
+    # The rods used to stop at the rib's back face. They now run on through
+    # it to 134, because that last 12 mm is what the rod lock clamps.
     rods = trimesh.util.concatenate([
-        S.cyl_x(S.ROD_D / 2, (2.0, S.X_RIB_BACK), y=dy, z=S.SCREW_H)
+        S.cyl_x(S.ROD_D / 2, (0.0, S.X_RIB_BACK + S.LOCK_T), y=dy,
+                z=S.SCREW_H)
         for dy in (-S.ROD_SPACING / 2, S.ROD_SPACING / 2)])
+    locks = trimesh.util.concatenate([
+        P["rod_lock"],
+        P["rod_lock"].copy().apply_transform(
+            trimesh.transformations.scale_matrix(-1.0, [0, 0, 0], [0, 1, 0]))])
     bushes = trimesh.util.concatenate([
         ring_x(S.LM_OD, S.ROD_D, (CARR_AT + 3.0, CARR_AT + 3.0 + S.LM_L),
                y=dy, z=S.SCREW_H)
@@ -157,10 +165,23 @@ def parts():
 
         ("8 mm shafts x2", rods, C_STEEL, [-150, 0, 0],
          "Slide the two hardened 8 mm shafts in from the motor end, through "
-         "the carriage bushes, into the seats at the rib end. They must be "
+         "the carriage bushes, through the rib and out the back, where "
+         "12 mm stands proud for the locks. They must be "
          "HARDENED, not 304 stainless: a recirculating ball bush brinells "
          "soft shafting and the carriage then rumbles. Teardrop bores, so "
          "they print round and the shafts press rather than rattle."),
+
+        ("rod lock x2", locks, C_LOCK, [110, 0, 0],
+         "Slide a lock onto each shaft end and bolt it to the back of the "
+         "rib with two M3 x 16, then pinch the M3 x 12 down through the top "
+         "lug. Nothing else holds the shafts: the frame bores are a press "
+         "fit, not a fixture, and the motor is 7 mm narrower than the rod "
+         "spacing so it blocks nothing. A plain shaft collar would stop a "
+         "shaft walking ONE way and lift off going the other, and there is "
+         "no room for the second collar, because the carriage sweeps to "
+         "within 4 mm of the rib. This one grips the shaft AND bolts to the "
+         "frame, so the shaft cannot travel at all. Bore prints 8.15 on an "
+         "8.00 shaft: it is meant to slide on, the screw does the holding."),
 
         ("Tr8x8 lead screw", S.cyl_x(SCREW_D / 2, X_SCREW, z=S.SCREW_H),
          C_SCREW, [-230, 0, 0],
@@ -290,7 +311,8 @@ def main():
         f = np.asarray(mesh.faces, np.uint32).ravel()
         manifest.append(dict(
             name=name, step=k, text=text, color=color, explode=explode,
-            printed=color in (C_FRAME, C_CARRIAGE, C_COLLAR, C_CAP, C_CLAMP),
+            printed=color in (C_FRAME, C_CARRIAGE, C_COLLAR, C_CAP,
+                              C_CLAMP, C_LOCK),
             moving=name in MOVING,
             mL=round(float(mesh.volume) / 1000.0, 2),
             vOff=off, nV=len(v) // 3, fOff=off + v.nbytes, nF=len(f) // 3))

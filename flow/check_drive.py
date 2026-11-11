@@ -706,3 +706,31 @@ check("every part print_plate orients actually exists",
       "in ORIENT but not in build(): %s"
       % ", ".join(sorted(_oriented - _built))
       if _oriented - _built else "no orphans")
+
+# The same gap, one layer out: rod_lock was in build() and in ORIENT, and
+# still missing from the 3-D model, which is the only place the students
+# ever look. Being printable is not the same as being in the assembly.
+import assembly as _AS
+_assembled = set(n for n, _m, _c, _e, _t in _AS.parts())
+_PRINTED_IN_ASSY = {"frame": "frame", "carriage": "carriage",
+                    "saddle_cap": "saddle cap + ties", "collar":
+                    "split collars x2", "rod_clamp": "rod clamp",
+                    "rod_lock": "rod lock x2"}
+check("every printed part is in the 3-D assembly",
+      set(_PRINTED_IN_ASSY) == _built - {"fit_coupon"},
+      "missing from the assembly map: %s"
+      % ", ".join(sorted(_built - {"fit_coupon"} - set(_PRINTED_IN_ASSY)))
+      if _built - {"fit_coupon"} - set(_PRINTED_IN_ASSY) else
+      "%d printed parts, all placed" % len(_PRINTED_IN_ASSY))
+check("the assembly names match what it actually draws",
+      set(_PRINTED_IN_ASSY.values()) <= _assembled,
+      "named but not drawn: %s"
+      % ", ".join(sorted(set(_PRINTED_IN_ASSY.values()) - _assembled))
+      if set(_PRINTED_IN_ASSY.values()) - _assembled else
+      "%d steps in the build, printed and bought" % len(_assembled))
+
+# The rods have to reach the lock, or the lock clamps air.
+check("the shafts in the assembly are as long as the BOM buys",
+      abs(_AS.parts()[5][1].bounds[1][0] - (S.X_RIB_BACK + S.LOCK_T)) < 1e-6,
+      "drawn to X=%.1f, and the BOM cuts them at %.0f mm"
+      % (_AS.parts()[5][1].bounds[1][0], S.X_RIB_BACK + S.LOCK_T))
