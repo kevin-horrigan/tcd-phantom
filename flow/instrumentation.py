@@ -308,6 +308,59 @@ def main():
     A("  cannot reach it.")
     A("")
 
+    # ------------------------------------------- the modules already in hand
+    A("THE CHEAP SINGLE-INLET MODULES, AND WHAT THEY CAN HONESTLY DO")
+    A("  A single inlet means GAUGE, referenced to the air around it, which is")
+    A("  the right reference for this loop. So those are not the wrong idea.")
+    A("  Their range is usually right too: the common MPS20N0040D module is")
+    A("  0-40 kPa and the peak here is %.1f kPa, 23 percent of scale, which is"
+      % ((head_pa(TANK_MM - crack_mm - up_mm) + pp_pa) / KPA))
+    A("  the same place on the dial as the Honeywell part.")
+    A("")
+    A("  The bottleneck is the ADC bolted to the sensor, not the sensor. An")
+    A("  HX710-class front end runs at tens of samples per second, and the")
+    A("  feature this phantom exists to reproduce is a %.0f ms systolic"
+      % (S.UPSTROKE_S * 1e3))
+    A("  upstroke. Count samples across THAT, not samples per second:")
+    A("  %-12s %12s %11s %s"
+      % ("output rate", "across the", "Nyquist vs", "what it can honestly do"))
+    A("  %-12s %12s %11s" % ("", "upstroke", "%.0f Hz" % f[k99]))
+    for rate, note_ok, note_no in (
+            (10.0, "mean only", "ten samples a beat is not a waveform"),
+            (40.0, "PI, peak, trough", "upstroke rate and notch are guesswork"),
+            (80.0, "PI and a usable shape", "notch is thin but there"),
+            (110.0, "the spec in this file", "comfortable"),
+            (200.0, "ABP2's rate", "nothing is left on the table")):
+        n = rate * S.UPSTROKE_S
+        ok = rate / 2.0 >= f[k99]
+        A("  %-12.0f %12.0f %11s  %s"
+          % (rate, n, "ok" if ok else "ALIASES",
+             note_ok if n >= 8 else note_no))
+    A("")
+    A("  So the split is clean, and it is worth using rather than arguing with.")
+    A("  PI is peak, trough and mean: three extrema, and extrema survive a")
+    A("  coarse sample rate because they are flat where you catch them. Shape")
+    A("  is the upstroke slope and the dicrotic notch, and those are exactly")
+    A("  what a slow ADC destroys. A 40 SPS module will set R2 and size the")
+    A("  plenum against PI perfectly well. It will not tell you whether the")
+    A("  systolic upstroke is right, and that is the thing the whole phantom")
+    A("  is for.")
+    A("")
+    A("  THREE NUMBERS TO CHECK ON THE ONES ALREADY IN HAND:")
+    A("    1. output rate in samples per second. Under about 80 and it reads")
+    A("       PI but not shape. Under about 20 and it reads the mean only.")
+    A("    2. full scale. 0-40 kPa is ideal. A 0-100 psi water sensor puts the")
+    A("       whole experiment in the bottom 1.3 percent of its range.")
+    A("    3. media. These are almost always 'non-corrosive gas' parts with a")
+    A("       bare die, so they need the air dead leg priced above. Keep it")
+    A("       under 20 mm of 1.5 mm bore and it costs 0.4 percent of stroke.")
+    A("")
+    A("  Recommendation: use what is already on the shelf for bring-up and for")
+    A("  the compliance and resistance sweep, because PI is what that sweep")
+    A("  measures and a cheap module measures PI. Buy the ABP2 when the")
+    A("  question becomes whether systole has the right shape.")
+    A("")
+
     A("WHAT TO SPECIFY")
     A("  pressure, mean      clear vertical tube, 1/4 in, open top, scaled in")
     A("                      mm, behind a %.0f mm x 1 mm capillary. Doubles as"

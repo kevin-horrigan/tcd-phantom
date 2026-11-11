@@ -88,8 +88,15 @@ BOM = [
      "BUY", "the 150 mm settling run into the block, plus spares. 1/8 in ID "
             "at 3.18 mm is the commodity equivalent and fits a 1/8 in barb"),
 
+    ("INSTRUMENTS", 2, "the single-inlet modules already on the shelf",
+     "gauge, check rate / range / media before trusting", "CHECK",
+     "single inlet means GAUGE, which is the right reference here, and "
+     "0-40 kPa is the right range. The bottleneck is the ADC: an HX710 at "
+     "40 SPS puts 4 samples across a 100 ms upstroke. Good enough for PI, "
+     "which is peak, trough and mean, and not good enough for the shape of "
+     "systole. Use these for bring-up and the compliance sweep"),
     ("INSTRUMENTS", 2, "Honeywell ABP2DANT005PG2A3XX",
-     "0-5 psi gauge, I2C, barbed, LIQUID MEDIA", "BUY",
+     "0-5 psi gauge, I2C, barbed, LIQUID MEDIA", "LATER",
      "P1 and P2. The 'T' in the part number is what makes it liquid media "
      "with food-grade gel: an 'N' there is dry gases only and would be "
      "destroyed. Barbless is ABP2DVNT005PG2A3XX and was the one actually "
