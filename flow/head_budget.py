@@ -297,6 +297,49 @@ def report():
       % crack)
     A("  head. R1's %.0f mm was never doing anything except blocking." % (FORWARD_FRAC * TANK_MM))
     A("")
+    A("  AND THEN DO NOT FIT IT, because of what happens with R2 SHUT.")
+    A("")
+    A("  Shutting R2 stops the flow, and with no flow there are no losses")
+    A("  anywhere, so everything upstream sits at the jar's %.0f mm. That"
+      % TANK_MM)
+    A("  part is harmless. The question is where the piston's half millilitre")
+    A("  a beat goes once the forward path is closed.")
+    A("")
+    A("  %-36s %9s %9s" % ("escape path for the piston", "peak mm", "peak psi"))
+    import math as _mm
+    _patm = 101325.0
+    _r1 = RHO * G * (FORWARD_FRAC * TANK_MM) * 1e-3 / q_si(Q_MEAN)
+    _qpk = 5.22e-6                       # from the BEAT array, instrumentation.py
+    _tq = 0.17 * (0.393 / 1.0)
+    _stall = 2 * _mm.pi * _tq * 0.30 / 0.008 / 120e-6
+
+    def _zp(ml):
+        return (1.0 / (2 * _mm.pi * (ml * 1e-6 / (1.4 * _patm)))
+                if ml > 0 else float("inf"))
+    for nm, z in (("R1 open, plenum 20 mL", 1.0 / (1 / _r1 + 1 / _zp(20))),
+                  ("R1 open, plenum EMPTY", _r1),
+                  ("check valve fitted, plenum 20 mL", _zp(20)),
+                  ("check valve fitted, plenum EMPTY", _zp(0))):
+        dp = min(z * _qpk if z != float("inf") else _stall, _stall)
+        pk = TANK_MM + head_mm(dp)
+        A("  %-36s %7.0f %9.2f" % (nm, pk, RHO * G * pk * 1e-3 / PSI))
+    A("")
+    A("  The last row is the whole argument. With a check valve, an EMPTY")
+    A("  plenum and R2 shut, the piston has nowhere to put the fluid and")
+    A("  goes straight to its %.0f psi stall, which is %.0f mmHg at a cast"
+      % (_stall / PSI, _stall / 133.322))
+    A("  gel. Without the valve the worst case is %.2f psi, under the relief"
+      % (RHO * G * (TANK_MM + head_mm(_r1 * _qpk)) * 1e-3 / PSI))
+    A("  setting, and the relief never even opens. R1 being a hole rather")
+    A("  than a valve is what makes a shut R2 a nuisance instead of a")
+    A("  destroyed block.")
+    A("")
+    A("  And an empty plenum with R2 being closed is not an exotic fault, it")
+    A("  is a Tuesday afternoon during bring-up. So: keep R1, do not fit the")
+    A("  check valve. If it is ever fitted anyway, the relief valve stops")
+    A("  being a backstop and becomes the only thing preventing this, which")
+    A("  is a much worse place to put the safety.")
+    A("")
     A("  WHAT BORE TO CUT R1 FROM, if it stays. Length goes as d^4, so the")
     A("  bore decides how finely the length can be trimmed by hand.")
     A("  %-10s %11s %13s %9s" % ("bore mm", "length mm", "mm per 1% head", "Re"))

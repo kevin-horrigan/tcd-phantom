@@ -68,7 +68,15 @@ BOM = [
              "which retired most of the motor problem"),
 
     ("FLUID INTERFACE", 1, "check valve", "Qosina 91050, 0.075 psi, 1/4 in barb",
-     "BUY", "THE ONE TO GET RIGHT. This line used to read '9105x', which is a "
+     "DROP", "DO NOT FIT. With a check valve, an EMPTY plenum and R2 shut, "
+             "the piston has nowhere to put its half millilitre and goes "
+             "straight to its 19 psi stall, 984 mmHg at a cast gel. With R1 "
+             "instead, the same fault peaks at 3.2 psi and the relief never "
+             "opens, because R1 is a hole and the fluid just goes back to "
+             "the jar. An empty plenum with R2 closed is a bring-up "
+             "afternoon, not an exotic fault. Kept on the list because the "
+             "part number history is worth not relearning: this line used "
+             "to read '9105x', which is a "
             "family wildcard and not a part number, so it found nothing. The "
             "four barbed parts are 91050 (1/4 in), 91054 (3/16), 91053 (1/8) "
             "and 91055 (3/8). Qosina needs a free account to see pricing. The "
