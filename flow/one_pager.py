@@ -141,9 +141,22 @@ def main():
         "about %.1f m of the\nkit's 1/4 inch tube\ncoiled. Cut long, trim"
         % (round(r1_L / 100.0) / 10.0), HOT, 9.5, va="top")
 
-    # ------------------------------------------------------- piston at P1
+    # ------------------------------------------------------ the manometer
+    # It had fallen off this drawing entirely during the rewrite, while the
+    # head budget kept saying "trim it against the manometer". A tube nobody
+    # has drawn is a tube nobody will build.
+    X_MANO = X_R1B + 0.22
+    H_MANO = 4.10 * 405.0 / 1200.0          # 405 mm on the jar's own scale
     pipe(X_R1B, X_P1)
-    bore((X_R1B + X_P1) / 2, 0.30, QTR, COOL)
+    vpipe(X_MANO, 0.0, H_MANO + 0.26, w=4.0, col=GOLD)
+    ax.plot([X_MANO - 0.085, X_MANO + 0.085], [H_MANO, H_MANO], color=GOLD,
+            lw=3.0, zorder=7)
+    lab(X_MANO - 0.42, 3.05, "MANOMETER", GOLD, 11.5, weight="bold")
+    lab(X_MANO - 0.42, 2.92,
+        "a clear tube, open at the top.\n"
+        "Fluid stands at 405 mm when\n"
+        "R1 is trimmed right.", MUTE, 9.5, va="top")
+    bore((X_R1B + X_P1) / 2 + 0.28, 0.30, QTR, COOL)
     vpipe(X_P1, -1.35, 0.0, col=HOT)
     bore(X_P1 + 0.40, -0.85, QTR, HOT)
     ax.add_patch(Circle((X_P1, 0.0), 0.075, facecolor=INK, edgecolor="none",

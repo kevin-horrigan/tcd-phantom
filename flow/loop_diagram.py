@@ -190,7 +190,20 @@ def main():
 
     # -------------------------------------------------- piston junction P1
     pipe(X_R1B, X_P1, 6.35, col=COOL)
-    balloon((X_R1B + X_P1) / 2, "C")
+    balloon((X_R1B + X_P1) / 2 + 0.16, "C")
+
+    # The manometer. It fell off this drawing during the topology rewrite
+    # while the head budget kept saying "trim it against the manometer", and
+    # a tube nobody has drawn is a tube nobody will build. It tees into the
+    # TRUNK, not the settling run, so it does not break the no-tees rule.
+    x_mano = X_R1B + 0.26
+    mano_mm = TANK_MM - H.seg_head("up")
+    vpipe(x_mano, Y, mano_mm, 6.35, col=GOLD)
+    ax.plot([x_mano - 0.06, x_mano + 0.06], [mano_mm, mano_mm], color=GOLD,
+            lw=2.4, zorder=7)
+    callout(2.46, 905, "MANOMETER",
+            "stands at %.0f mm. Read it with a ruler" % mano_mm, GOLD,
+            ha="center", to=(x_mano, mano_mm + 16))
     vpipe(X_P1, -160, Y, 6.35, col=HOT)
     ax.add_patch(Circle((X_P1, Y), 0.040, facecolor=INK, edgecolor="none",
                         zorder=7))

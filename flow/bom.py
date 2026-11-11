@@ -150,8 +150,14 @@ BOM = [
      "media with food-grade gel: an 'N' there is dry gases only and would "
      "be destroyed. Barbless is ABP2DVNT005PG2A3XX. ~200 Hz, 3.3 V, and "
      "both land on I2C 0x28 so they need the Pico's two buses"),
-    ("INSTRUMENTS", 1, "clear tube and 1 mm capillary", "manometer standpipe",
-     "BUY", "reads the MEAN to about a millimetre of fluid. The transducer's "
+    ("INSTRUMENTS", 1, "clear tube and 1 mm capillary",
+     "the MANOMETER, teed into the trunk at the piston junction",
+     "BUY", "a tube, open at the top, with loop fluid standing in it. Its "
+            "HEIGHT is the pressure. Stands at 405 mm when R1 is right, and "
+            "1 - 405/1200 is the share of the pulse going forward, so it "
+            "reads the design parameter directly. Tee it into the TRUNK, "
+            "never the 3 mm run. reads the MEAN to about a millimetre of "
+            "fluid. The transducer's "
             "total error band is 1.5 percent of 5 psi, which is 4 mmHg, so "
             "the tube is the absolute reference and the sensor is the shape"),
     ("INSTRUMENTS", 1, "kitchen scale, 1 g", "gravimetric flow catch", "BUY",
