@@ -20,7 +20,7 @@ Status column:
 """
 import syringe_drive as S
 
-ROD_L = S.SCREW_SPAN + 10.0
+ROD_L = S.X_RIB_BACK + S.LOCK_T   # through the frame AND the lock
 SCREW_L = S.SCREW_SPAN + 12.0
 
 # group, qty, item, spec, status, note
@@ -37,14 +37,23 @@ BOM = [
      "BUY", "8 mm PER REV, not 2 mm. T8x2 is far more common and wrong here"),
     ("MOTION", 1, "anti-backlash T8 nut", "spring preloaded, flanged",
      "BUY", "a plain nut gives 0.2 mm lost motion, 2 to 5% of the beat"),
+    ("PRINTED", 2, "rod_lock", "4.7 mL each, ~12 min", "PRINT",
+     "Kevin's lockable collar, in the form the frame has room for. A plain "
+     "collar stops ONE direction, and there is nowhere for the second: the "
+     "carriage sweeps to within 4 mm of the rib. This one clamps the rod "
+     "with an M3 AND bolts to the rib with two more, so the rod is fixed to "
+     "the frame and cannot walk either way"),
+    ("FASTENERS", 2, "M3 x 12 socket cap", "rod lock pinch screw", "BUY",
+     "one per rod lock, pulls the C shut on the rod"),
+    ("FASTENERS", 4, "M3 x 16 thread-forming", "rod lock into the rib", "BUY",
+     "two per rod lock. They form their own thread in the printed rib"),
     ("MOTION", 2, "8 mm smooth rod", "hardened, %.0f mm" % ROD_L, "BUY",
-     "buy 300 mm and cut both from it. NOT with a hacksaw: the case is "
+     "buy 300 mm and cut both from it (each now passes through the rod lock on the rib back face, hence 134 and not 122). NOT with a hacksaw: the case is "
      "60 HRC against a 64 HRC blade and it will not cut, which reads as "
      "having been sent the wrong rod. Abrasive chop saw, angle grinder or "
      "rotary tool. CHAMFER BOTH ENDS afterwards or a square burr scores the "
-     "LM8UU ball tracks going in. Nothing retains these but the press fit, "
-     "so the coupon's rod bore is what says whether that is enough. See "
-     "rods.py"),
+     "LM8UU ball tracks going in. rod_lock() retains them, so the press "
+     "fit no longer has to hold on its own. See rods.py"),
     ("MOTION", 2, "LM8UU linear bearing", "15 mm OD x 24 mm", "BUY", ""),
     ("MOTION", 1, "608 bearing", "8 x 22 x 7, skate bearing", "BUY",
      "takes the screw's far end in the rib"),

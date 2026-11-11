@@ -11,14 +11,10 @@ barely harder than the work and gives up in a few strokes. People buy the
 shaft, reach for the saw they already own, and conclude they were sent the
 wrong thing. An abrasive wheel cuts it in under a minute.
 
-DON'T THEY MOVE, SINCE NOTHING HOLDS THEM. Correct, and the model has
-admitted it in a comment for weeks: "the rod bores want a press fit, because
-nothing else retains the rods". The bore runs clean through both the motor
-plate and the end rib, so there is no shoulder, no circlip and no collar.
-The only thing holding a rod is friction in 16 mm of printed plastic, and
-the bore is drawn line-to-line. That is a light press if the printer is on
-song and a slip fit if it is a hair loose, which is exactly what the fit
-coupon exists to find out.
+DON'T THEY MOVE, SINCE NOTHING HOLDS THEM. They did, and now they do not:
+rod_lock() clamps each rod and bolts to the rib. The section below is kept
+because the reasoning that got there is worth having, including the part I
+got wrong.
 """
 import os
 
@@ -81,34 +77,40 @@ def main():
     A("  and the two directions are never quite equal, so a loose rod")
     A("  ratchets. Tens of thousands of cycles in an afternoon.")
     A("")
-    A("  ONE DIRECTION IS ALREADY SAFE. The motor is bolted to the front")
-    A("  face of the motor plate, so a rod walking forward hits the motor")
-    A("  and stops. Only the rib direction is open, and that is the one")
-    A("  that matters anyway because it walks toward the syringe.")
+    A("  I SAID THE MOTOR BLOCKED ONE DIRECTION. IT DOES NOT. The rods sit")
+    A("  at y = +/- %.0f and a NEMA17 is %.1f square, so each rod passes"
+      % (S.ROD_SPACING / 2, S.MOTOR_SQ))
+    A("  %.2f mm OUTSIDE the motor body and sails straight past it. Both"
+      % (S.ROD_SPACING / 2 - S.MOTOR_SQ / 2))
+    A("  ends were open the whole time, which makes a lock necessary rather")
+    A("  than tidy.")
     A("")
-    A("  SO THE COUPON DECIDES IT, and this is the thing to feel for when")
-    A("  it comes off the bed. Push the rod into the coupon's teardrop bore:")
+    A("  AND A PLAIN COLLAR CANNOT DO IT. A collar clamped to a rod stops")
+    A("  ONE direction: it jams against a fixed face when the rod moves")
+    A("  toward it and lifts straight off when the rod moves the other way.")
+    A("  Both directions would take two collars per rod, and there is")
+    A("  nowhere for the second. The carriage sweeps X %.0f to %.0f, which"
+      % (S.X_CARR_MIN, S.X_CARR_MIN + S.TRAVEL + S.CARRIAGE_L))
+    A("  leaves %.0f mm of rod free inboard of the rib against a collar's ten."
+      % (S.X_RIB - (S.X_CARR_MIN + S.TRAVEL + S.CARRIAGE_L)))
     A("")
-    A("    needs a tap with a mallet, will not pull out by hand")
-    A("        the fit is right. Nothing else is needed.")
-    A("    goes in with firm thumb pressure, comes out with a tug")
-    A("        marginal. It will hold for a session and walk over a week.")
-    A("    slides in and out freely")
-    A("        it will walk in an afternoon. Fix it.")
+    A("  SO THE LOCK BOLTS TO THE RIB. rod_lock() clamps the rod with one")
+    A("  M3 and screws to the rib's back face with two more. Once the rod")
+    A("  is fixed to the frame it cannot travel either way, and one part")
+    A("  per rod replaces the four collars that would not have fitted.")
     A("")
-    A("  IF IT NEEDS FIXING, in the order I would try them:")
-    A("    1. a drop of retaining compound or slow epoxy in each bore. The")
-    A("       rods never need to come out, and this is five minutes.")
-    A("    2. a printed strap across both rod ends on the rib's back face,")
-    A("       held by the zip-tie slots already there. Reversible.")
-    A("    3. an M3 self-tapped through the rib onto each rod. It dents the")
-    A("       rod, which is harmless because that end never sees a bearing,")
-    A("       but it is the least tidy of the three.")
-    A("")
-    A("  WHAT I WOULD NOT DO is shaft collars, which is the obvious answer")
-    A("  and does not fit: there is %.0f mm between the rib's back face and"
+    A("  It goes on the rib's BACK face because that face is free: the")
+    A("  saddle starts %.0f mm behind the rib but spans only y +/- 13, and"
       % 3.0)
-    A("  the saddle, and a collar is about ten.")
+    A("  the rods are at y +/- %.0f. The lock's inner edge is at y = %.0f."
+      % (S.ROD_SPACING / 2, S.ROD_SPACING / 2 - S.LOCK_HALF))
+    A("")
+    A("  ITS BORE IS A CLAMP FIT, NOT A PRESS FIT, which is the opposite of")
+    A("  the frame's bores and easy to get backwards. It prints %.2f on an"
+      % (S.ROD_D + 0.15))
+    A("  %.2f rod so it SLIDES on, and then the screw does the holding."
+      % S.ROD_D)
+    A("  A press fit here would make it impossible to position.")
 
 
 if __name__ == "__main__":

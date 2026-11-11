@@ -632,12 +632,41 @@ check("the rods have enough printed bore to grip",
       "in the rib. The bore is line-to-line, so the coupon decides whether "
       "that is a press or a slip" % (_grip, S.ROD_D, S.WALL_T, S.RIB_T))
 
-# One direction is blocked by the motor itself, which is worth knowing
-# because it halves the problem: a rod can only walk toward the syringe.
-check("a walking rod can only go one way",
-      S.X_MOTOR_FACE <= 0.0 + 1e-9,
-      "the motor bolts to the plate's front face at X=0, so forward travel "
-      "is stopped by the motor. Only the rib direction is open")
+# I claimed on 2026-11-10 that the motor blocked forward travel and that
+# this halved the problem. It does not. The rods sit at y = +/- 28 and a
+# NEMA17 is 42.3 square, so the rod passes 6.85 mm OUTSIDE the motor body
+# and sails right by it. Both directions were open the whole time, which
+# makes the lock necessary rather than tidy.
+_clear = S.ROD_SPACING / 2 - S.MOTOR_SQ / 2
+check("the motor does NOT retain the rods, contrary to the old note",
+      _clear > 0.0,
+      "rod centre y=%.0f against a motor half width of %.2f, so the rod "
+      "clears it by %.2f mm and the motor stops nothing"
+      % (S.ROD_SPACING / 2, S.MOTOR_SQ / 2, _clear))
+
+# What does retain them.
+check("something actually fixes the rods in both directions",
+      hasattr(S, "rod_lock"),
+      "rod_lock() clamps the rod and bolts to the rib, so the rod is fixed "
+      "to the frame. A plain collar would stop one direction only")
+
+_free_rib = S.X_RIB - (S.X_CARR_MIN + S.TRAVEL + S.CARRIAGE_L)
+check("a pair of plain collars would NOT have fitted",
+      _free_rib < 10.0,
+      "only %.0f mm of rod is free inboard of the rib once the carriage has "
+      "swept, and a collar is about 10. That is why the lock bolts to the "
+      "rib instead of just gripping the rod" % _free_rib)
+
+check("the rod lock clears the barrel saddle",
+      S.ROD_SPACING / 2 - S.LOCK_HALF > 13.0,
+      "lock inner edge y=%.0f against a saddle that spans y +/- 13"
+      % (S.ROD_SPACING / 2 - S.LOCK_HALF))
+
+check("the rod lock bore is a clamp fit, not a press fit",
+      0.08 <= (S.ROD_D + 0.15 + S.HOLE_SHRINK) - S.HOLE_SHRINK - S.ROD_D <= 0.30,
+      "prints %.2f on an %.2f rod. It has to SLIDE on so the screw can do "
+      "the holding, which is the opposite of the frame's bores"
+      % (S.ROD_D + 0.15, S.ROD_D))
 
 
 # ------------------------------------------- what the ABS coupon bought us

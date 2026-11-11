@@ -174,6 +174,27 @@ NUT_POCKET_T = 5.0       # and up to 5.0 thick. Thinner just sits deeper
 NUT_BORE_D = 12.0        # body clearance through, accepts a body up to 12
 NUT_HOLES_CUT = False    # see carriage(). The bolt circle has no recovery
 
+# ---------------------------------------------------------------- rod lock
+# Kevin's idea, in the only form the frame has room for. A plain collar
+# clamped to a rod stops ONE direction: it jams against a fixed face when
+# the rod moves toward that face and simply lifts off when the rod moves the
+# other way. Stopping both would take two collars per rod, and there is
+# nowhere to put the second one: the carriage sweeps X 34 to 109, which
+# leaves 4 mm inboard of the rib, and a collar is three times that.
+#
+# A block that clamps the rod AND bolts to the rib does both directions with
+# one part, because once the rod is fixed to the rib it cannot travel at all.
+# Same M3 pinch screw Kevin asked for, one more screw to make it a fixture
+# rather than a collar.
+#
+# It lives on the rib's BACK face, which is free: the saddle starts 3 mm
+# behind the rib but spans only y +/- 13, and the rods are at y +/- 28.
+LOCK_T = 12.0            # thickness, sitting proud of the rib's back face
+LOCK_HALF = 11.0         # half width and half height around the rod
+LOCK_SCREW_Y = 7.0       # pinch screw, outboard of the rod centre
+LOCK_MOUNT_Y = 7.5       # the two rib screws, inboard of it
+LOCK_MOUNT_Z = 7.0
+
 
 # ------------------------------------------------------------------ guidance
 ROD_D, ROD_SPACING = 8.0, 56.0       # two 8 mm smooth rods, centre to centre
@@ -643,6 +664,46 @@ def collar():
                           (-COLLAR_SLIT / 2.0, COLLAR_SLIT / 2.0),
                           (bore_r - 1.0, SADDLE_BORE)))
     return ring
+
+
+def rod_lock():
+    """One per rod, on the rib's back face. Clamps the rod and bolts to the
+    rib, so the rod cannot walk either way.
+
+    The bore is a CLAMP fit and not a press fit, which is the opposite of
+    the frame's rod bores: this one has to slide onto the rod freely so the
+    screw can do the holding. A press fit here would make it impossible to
+    position.
+    """
+    y0 = ROD_SPACING / 2
+    x0, x1 = X_RIB_BACK, X_RIB_BACK + LOCK_T
+    xm = (x0 + x1) / 2.0
+    zc = SCREW_H
+
+    body = box((x0, x1), (y0 - LOCK_HALF, y0 + LOCK_HALF),
+               (zc - LOCK_HALF, zc + LOCK_HALF))
+
+    # Rod bore. Slides on, then clamps.
+    body = diff(body, cyl_x(ROD_D / 2 + 0.075 + HOLE_SHRINK / 2.0,
+                            (x0 - 1, x1 + 1), y=y0, z=zc))
+
+    # The slot that makes it a C, running outboard from the bore so the
+    # pinch screw comes in from the TOP where a driver can reach it.
+    body = diff(body, box((x0 - 1, x1 + 1), (y0, y0 + LOCK_HALF + 2.0),
+                          (zc - 0.7, zc + 0.7)))
+
+    # Pinch screw: clearance in the upper lug, thread-forming in the lower.
+    body = diff(body, cyl_z(M3 / 2, (zc + 0.7, zc + LOCK_HALF + 1),
+                            x=xm, y=y0 + LOCK_SCREW_Y))
+    body = diff(body, cyl_z(M3_TAP / 2, (zc - LOCK_HALF - 1, zc - 0.7),
+                            x=xm, y=y0 + LOCK_SCREW_Y))
+
+    # Two screws into the rib, inboard of the bore and split in Z so the
+    # block cannot rotate about the rod.
+    for dz in (-LOCK_MOUNT_Z, LOCK_MOUNT_Z):
+        body = diff(body, cyl_x(M3 / 2, (x0 - 1, x1 + 1),
+                                y=y0 - LOCK_MOUNT_Y, z=zc + dz))
+    return body
 
 
 def carriage():
