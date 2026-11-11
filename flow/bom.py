@@ -150,7 +150,7 @@ BOM = [
      "media with food-grade gel: an 'N' there is dry gases only and would "
      "be destroyed. Barbless is ABP2DVNT005PG2A3XX. ~200 Hz, 3.3 V, and "
      "both land on I2C 0x28 so they need the Pico's two buses"),
-    ("INSTRUMENTS", 1, "clear vinyl tube, 6.35 mm bore, 1.3 m",
+    ("INSTRUMENTS", 1, "clear vinyl tube, 6.35 mm bore, 1.3 m, + a metre stick",
      "the MANOMETER, teed into the trunk at the piston junction",
      "BUY", "a tube, open at the top, with loop fluid standing in it. Its "
             "HEIGHT is the pressure. Stands at 405 mm when R1 is right, and "
@@ -164,12 +164,13 @@ BOM = [
             "fluid. The transducer's "
             "total error band is 1.5 percent of 5 psi, which is 4 mmHg, so "
             "the tube is the absolute reference and the sensor is the shape"),
-    ("INSTRUMENTS", 2, "blunt dispensing needle, 16 or 18 gauge",
+    ("INSTRUMENTS", 2, "blunt luer needle, 16 gauge, 25 mm",
      "the restriction in front of the manometer", "BUY",
-     "luer, so it mates the adapters already listed. 16 gauge settles in "
-     "19 s, 18 gauge in 78 s, and every gauge in the box lands somewhere "
-     "that reads the mean and cannot follow the pulse. Without it the tube "
-     "resonates at 0.89 Hz with the beat and spits out of the top"),
+     "PART 3 OF 3 of the manometer, not an alternative to it. Luer, so it "
+     "mates the adapters already listed. Every gauge reads the mean and "
+     "cannot follow the pulse, so this is about patience: 16 settles in "
+     "19 s, 18 in 78 s. Without it the tube resonates at 0.89 Hz with the "
+     "beat and spits out of the top"),
 
     ("INSTRUMENTS", 1, "kitchen scale, 1 g", "gravimetric flow catch", "BUY",
      "0.4 percent on the mean flow over a 60 s catch"),
