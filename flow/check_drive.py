@@ -484,18 +484,35 @@ check("printed frame: the measured flange still seats against the rib",
 
 # ------------------------------------------------------- the T8 nut interface
 # The nut bolts the screw to the carriage, so its mounting face carries every
-# newton the piston makes. carriage() cuts the brass pattern: four M3 on a
-# 16 mm bolt circle. The part on order is the POM spring-loaded nut, whose
-# listing gives the flange diameter and then stops. This is the saddle-bore
-# situation with the escape hatch removed, because a bolt circle cannot be
-# drawn loose: either the holes coincide or the nut does not mount.
+# newton the piston makes, and the bolt circle is the one dimension that
+# cannot be drawn loose: brass T8 flange nuts are 16 mm and POM ones are sold
+# at 18, and at 16 against 18 the M3 centres land 1 mm apart radially, so the
+# two sets merge into slots and the face is scrap.
+#
+# So the carriage no longer cuts them. It cuts a pocket sized to swallow the
+# range, and the nut becomes its own drilling jig afterwards. That turns an
+# unrecoverable gamble into four shallow pilot holes, which is why this gate
+# now asks about the POCKET and not about the nut.
 _nut = S.NUTS[S.NUT]
-check("fitted nut interface measured before the carriage prints",
-      not S.NUT_UNKNOWN,
-      "nut '%s' unmeasured: %s. carriage() is cut for '%s'"
-      % (S.NUT, ", ".join(S.NUT_UNKNOWN), S.NUT_CUT_FOR)
-      if S.NUT_UNKNOWN else
-      "'%s' measured and carriage() cut for '%s'" % (S.NUT, S.NUT_CUT_FOR))
+check("the carriage does not commit to a bolt circle it cannot know",
+      not S.NUT_HOLES_CUT,
+      "holes deferred, pocket is %.1f dia x %.1f deep with a %.1f bore. "
+      "Mark through the nut on the lead screw, pilot 4 mm, drive M3 "
+      "thread-formers" % (S.NUT_POCKET_D, S.NUT_POCKET_T, S.NUT_BORE_D))
+
+_bs = S.NUTS["brass-std"]
+check("the pocket swallows the nut we can actually name",
+      S.NUT_POCKET_D > 22.0 and S.NUT_POCKET_T > _bs["flange_t"]
+      and S.NUT_BORE_D > _bs["body_d"],
+      "brass-std is %.1f flange / %.1f thick / %.1f body and the pocket is "
+      "%.1f / %.1f / %.1f, so there is room above every one"
+      % (22.0, _bs["flange_t"], _bs["body_d"],
+         S.NUT_POCKET_D, S.NUT_POCKET_T, S.NUT_BORE_D))
+
+check("the nut pocket clears the bearing bores",
+      S.ROD_SPACING / 2 - S.NUT_POCKET_D / 2 - (S.LM_OD / 2 + 0.15) > 3.0,
+      "%.1f mm of wall between the pocket and each LM8UU bore"
+      % (S.ROD_SPACING / 2 - S.NUT_POCKET_D / 2 - (S.LM_OD / 2 + 0.15)))
 
 # Lead is the one nut number the listing does state, and the only one the
 # firmware depends on. A "T8" sold with a 2 mm lead instead of 8 would deliver

@@ -164,6 +164,17 @@ NUT_HOLES = 4
 NUT_BODY_D = 10.6
 NUT_CUT_FOR = "brass-std"
 
+# The carriage's nut pocket, sized to SWALLOW the plausible range rather than
+# to fit one nut, because it has to be cut before the nut is measured.
+# brass-std is 22.0 flange / 3.5 thick / 10.6 body, so each of these has
+# room above it. Oversize costs nothing: the lead screw sets concentricity
+# while the nut is marked and the screws set it afterwards.
+NUT_POCKET_D = 24.5      # flange counterbore, accepts a flange up to ~24
+NUT_POCKET_T = 5.0       # and up to 5.0 thick. Thinner just sits deeper
+NUT_BORE_D = 12.0        # body clearance through, accepts a body up to 12
+NUT_HOLES_CUT = False    # see carriage(). The bolt circle has no recovery
+
+
 # ------------------------------------------------------------------ guidance
 ROD_D, ROD_SPACING = 8.0, 56.0       # two 8 mm smooth rods, centre to centre
 
@@ -644,15 +655,32 @@ def carriage():
     for dy in (-ROD_SPACING / 2, ROD_SPACING / 2):
         body = diff(body, cyl_x(LM_OD / 2 + 0.15, (x0 - 1, x1 + 1), y=dy, z=SCREW_H))
 
-    # T8 nut: flange counterbore on the -X face, body clearance through.
-    body = diff(body, cyl_x(NUT_FLANGE_D / 2 + FIT,
-                            (x0 - 1, x0 + NUT_FLANGE_T + FIT), z=SCREW_H))
-    body = diff(body, cyl_x(NUT_BODY_D / 2 + FIT, (x0 - 1, x1 + 1), z=SCREW_H))
-    for a in np.arange(45.0, 360.0, 90.0):
-        t = np.radians(a)
-        body = diff(body, cyl_x(M3 / 2, (x0 - 1, x1 + 1),
-                                y=NUT_BC / 2 * np.cos(t),
-                                z=SCREW_H + NUT_BC / 2 * np.sin(t)))
+    # T8 nut. Every feature here is material REMOVED, which is the whole
+    # reason this part can print before the nut is in hand: a pocket cut
+    # generously can always be opened further, and one cut to the wrong
+    # pattern cannot be closed.
+    #
+    # NUT_HOLES_CUT is False because the bolt circle is the one dimension
+    # with no recovery. Brass T8 flange nuts are 16 mm, POM ones are sold at
+    # 18, and at 16 against 18 the M3 centres land 1 mm apart radially, so
+    # the two sets of holes merge into slots and the face is scrap. There is
+    # no filing your way back from that.
+    #
+    # Instead the nut is its own drilling jig. Thread it onto the lead
+    # screw, slide the carriage on so the screw holds both concentric, mark
+    # through the nut's holes, pilot about 4 mm deep and drive M3
+    # thread-forming screws into the ABS. Shallow pilots are easy to place
+    # by hand; a 30 mm through hole is not, which is why this is the way
+    # round it is done.
+    body = diff(body, cyl_x(NUT_POCKET_D / 2,
+                            (x0 - 1, x0 + NUT_POCKET_T), z=SCREW_H))
+    body = diff(body, cyl_x(NUT_BORE_D / 2, (x0 - 1, x1 + 1), z=SCREW_H))
+    if NUT_HOLES_CUT:
+        for a in np.arange(45.0, 360.0, 90.0):
+            t = np.radians(a)
+            body = diff(body, cyl_x(M3 / 2, (x0 - 1, x1 + 1),
+                                    y=NUT_BC / 2 * np.cos(t),
+                                    z=SCREW_H + NUT_BC / 2 * np.sin(t)))
 
     # Plunger capture: open-top slot for the rod, and a disc pocket sized to
     # SWALLOW the whole plausible disc range rather than to fit one reading.
