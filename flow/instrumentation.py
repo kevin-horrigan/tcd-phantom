@@ -188,6 +188,59 @@ def main():
     A("")
 
     # ----------------------------------------------------------- standpipe
+    A("WHAT THE MANOMETER IS MADE OF")
+    A("  Clear tubing taped to a metre stick, and a blunt needle in front of")
+    A("  it. That is the whole instrument.")
+    A("")
+    A("  CLEAR, obviously, since the meniscus is the reading. Which rules out")
+    A("  the RO kit's own tube: it is white LLDPE and you cannot see a level")
+    A("  through it. Clear vinyl from a hardware store is the easy answer.")
+    A("")
+    A("  AND SOFT IS FINE HERE, which is worth saying out loud because every")
+    A("  other run in this loop forbids it. The manometer carries no flow and")
+    A("  sits behind a restriction, so its compliance never reaches the pulse")
+    A("  and there is nothing for a soft wall to steal. It only has to be")
+    A("  straight and vertical, which a strip of tape and a metre stick do.")
+    A("")
+    A("  TALL ENOUGH TO NOT OVERFLOW, and the number is not the working")
+    A("  pressure. If R2 is ever closed the flow stops, and with no flow")
+    A("  there is no loss anywhere, so the tube rises to the JAR's own")
+    A("  height: %.0f mm. Build it %.1f m and it can never spill, whatever"
+      % (TANK_MM, (TANK_MM + 100.0) / 1000.0))
+    A("  anyone does to the clamps. Shorter and the first mistake costs a")
+    A("  litre of blood-mimicking fluid on the bench.")
+    A("")
+    A("  BORE, which trades two things:")
+    A("  %-12s %13s %13s %11s"
+      % ("bore", "capillary rise", "if surfactant", "holds, mL"))
+    for d in (3.0, 4.0, 6.35, 10.0):
+        r = d * 1e-3 / 2.0
+        A("  %-12s %10.1f mm %10.1f mm %10.0f"
+          % ("%.2f mm" % d, 2 * 0.072 / (RHO * G * r) * 1e3,
+             2 * 0.035 / (RHO * G * r) * 1e3,
+             math.pi * r * r * 1.3 * 1e6))
+    A("  The fluid climbs the walls by itself, a few mm, more in a narrow")
+    A("  tube. But that is a fixed OFFSET, not a scale error, so zeroing the")
+    A("  ruler against a known level removes it completely. 6.35 mm is the")
+    A("  sensible pick: a few mm of rise and 41 mL of dead fluid.")
+    A("")
+    A("  ZERO IT AT THE RESERVOIR'S SURFACE, not at the bench or the block.")
+    A("  That is the datum the whole head budget is written against, so a")
+    A("  ruler zeroed there reads budget numbers directly with no arithmetic.")
+    A("")
+    A("  THE RESTRICTION IN FRONT OF IT is a blunt dispensing needle. Luer,")
+    A("  so it mates with the adapters already on the list, and a known bore.")
+    A("  %-20s %9s %10s" % ("25 mm blunt needle", "ID mm", "settles in"))
+    _c = math.pi * (6.35e-3 / 2) ** 2 / (RHO * G)
+    for g, idd in (("14 gauge", 1.60), ("16 gauge", 1.19),
+                   ("18 gauge", 0.84), ("20 gauge", 0.60)):
+        _r = 128 * MU * 0.025 / (math.pi * (idd * 1e-3) ** 4)
+        A("  %-20s %9.2f %7.0f s" % (g, idd, 3.0 * _r * _c))
+    A("  Any of them works, which is the useful part: they all land between")
+    A("  a few seconds and a couple of minutes, and all of those are 'reads")
+    A("  the mean and cannot follow the pulse'. Pick 16 or 18 and move on.")
+    A("")
+
     A("THE STANDPIPE: IT READS IN BMF, NOT WATER")
     A("  GROUP-2_phase0-bench-rig.md already argues for the column and argues")
     A("  it well: a primary standard accurate to however well you read a tape")
