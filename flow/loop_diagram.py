@@ -335,11 +335,11 @@ def main():
     tb.set_ylim(0, 1)
     C_REF, C_RUN, C_WHERE, C_BORE, C_LEN, C_HEAD, C_NOTE = (
         0.010, 0.038, 0.222, 0.352, 0.410, 0.466, 0.527)
-    ROW = 0.0355
+    ROW = 0.0342
     y = 0.962
     tb.text(0.0, y + 0.030, "RUNS", fontsize=10.5, color=INK, fontweight="bold")
     for cx, h in ((C_RUN, "run"), (C_WHERE, "where"), (C_BORE, "bore"),
-                  (C_LEN, "length"), (C_HEAD, "head"),
+                  (C_LEN, "length"), (C_HEAD, "head used"),
                   (C_NOTE, "material and note")):
         tb.text(cx, y, h, fontsize=8.6, color=MUTE, fontweight="semibold")
     tb.plot([0, 1], [y - 0.013, y - 0.013], color="#ccc", lw=1.0)
@@ -357,6 +357,12 @@ def main():
         tb.text(C_HEAD, y, "%.0f mm" % head(name), fontsize=8.4, color=c)
         tb.text(C_NOTE, y, mat, fontsize=8.0, color=HOT if hot else MUTE)
         y -= ROW
+    tb.text(C_WHERE, y + 0.004,
+            "'length' is a length. 'head used' is a PRESSURE written as the "
+            "height of fluid that would make it: 1 mm = 10.2 Pa = 0.076 mmHg. "
+            "Both columns are millimetres and they are not the same quantity.",
+            fontsize=7.6, color=MUTE, style="italic")
+    y -= ROW
     tb.plot([0, 0.52], [y + 0.021, y + 0.021], color="#ccc", lw=1.0)
     for lab, val, bold in (("everything above", "%.0f mm" % plumb, False),
                            ("R2 is whatever is left", "%.0f mm" % r2_mm, False),
