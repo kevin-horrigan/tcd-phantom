@@ -45,8 +45,14 @@ BOM = [
      "the frame and cannot walk either way"),
     ("FASTENERS", 2, "M3 x 12 socket cap", "rod lock pinch screw", "BUY",
      "one per rod lock, pulls the C shut on the rod"),
-    ("FASTENERS", 4, "M3 x 16 thread-forming", "rod lock into the rib", "BUY",
-     "two per rod lock. They form their own thread in the printed rib"),
+    ("FASTENERS", 4, "M3 x %.0f thread-forming" % S.LOCK_SCREW_L,
+     "rod lock into the rib", "BUY",
+     "two per rod lock, and the length is NOT free. 12 mm of the screw is "
+     "spent crossing the lock before it reaches the rib, so an M3 x 16 "
+     "leaves only 4 mm of thread in the rib and an M3 x 20 leaves 8. The "
+     "rib is 9 thick, so 20 is the longest that does not come out the far "
+     "side into the carriage sweep. This is the one direction the lock "
+     "cannot take in compression, so it is the one to spend 4 mm on"),
     ("MOTION", 2, "8 mm smooth rod", "hardened, %.0f mm" % ROD_L, "BUY",
      "buy 300 mm and cut both from it (each now passes through the rod lock on the rib back face, hence 134 and not 122). NOT with a hacksaw: the case is "
      "60 HRC against a 64 HRC blade and it will not cut, which reads as "

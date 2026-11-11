@@ -173,15 +173,20 @@ def parts():
 
         ("rod lock x2", locks, C_LOCK, [110, 0, 0],
          "Slide a lock onto each shaft end and bolt it to the back of the "
-         "rib with two M3 x 16, then pinch the M3 x 12 down through the top "
+         "rib with two M3 x 20, then pinch the M3 x 12 down through the top "
          "lug. Nothing else holds the shafts: the frame bores are a press "
          "fit, not a fixture, and the motor is 7 mm narrower than the rod "
-         "spacing so it blocks nothing. A plain shaft collar would stop a "
-         "shaft walking ONE way and lift off going the other, and there is "
-         "no room for the second collar, because the carriage sweeps to "
-         "within 4 mm of the rib. This one grips the shaft AND bolts to the "
-         "frame, so the shaft cannot travel at all. Bore prints 8.15 on an "
-         "8.00 shaft: it is meant to slide on, the screw does the holding."),
+         "spacing so it blocks nothing. The two walking directions are NOT "
+         "symmetric. A shaft creeping BACK toward the motor drives the lock "
+         "into the rib's back face, which is compression on a printed wall "
+         "and cannot fail. A shaft creeping FORWARD toward the syringe pulls "
+         "on the two M3 instead, and that is the weaker direction: about "
+         "2000 N of thread pullout against a walking force under 0.1 N, so "
+         "weaker here still means four orders of magnitude of margin. The "
+         "screws are x 20 and not x 16 because 12 mm of them is spent "
+         "crossing the lock; x 16 would leave 4 mm in the rib, x 20 leaves "
+         "8, and the rib is 9 thick. Bore prints 8.15 on an 8.00 shaft: it "
+         "is meant to slide on, the screw does the holding."),
 
         ("Tr8x8 lead screw", S.cyl_x(SCREW_D / 2, X_SCREW, z=S.SCREW_H),
          C_SCREW, [-230, 0, 0],

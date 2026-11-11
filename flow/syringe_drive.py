@@ -194,6 +194,12 @@ LOCK_HALF = 11.0         # half width and half height around the rod
 LOCK_SCREW_Y = 7.0       # pinch screw, outboard of the rod centre
 LOCK_MOUNT_Y = 7.5       # the two rib screws, inboard of it
 LOCK_MOUNT_Z = 7.0
+LOCK_SCREW_L = 20.0      # the rib screws, and the length is load bearing.
+                         # 12 mm is spent crossing the lock before the thread
+                         # reaches the rib, so x16 engages 4 mm and x20
+                         # engages 8. The rib is RIB_T = 9, so 20 is the
+                         # longest that does not break out into the gap the
+                         # carriage sweeps. See the check in check_drive.
 
 
 # ------------------------------------------------------------------ guidance

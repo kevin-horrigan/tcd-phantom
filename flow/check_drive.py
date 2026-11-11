@@ -734,3 +734,48 @@ check("the shafts in the assembly are as long as the BOM buys",
       abs(_AS.parts()[5][1].bounds[1][0] - (S.X_RIB_BACK + S.LOCK_T)) < 1e-6,
       "drawn to X=%.1f, and the BOM cuts them at %.0f mm"
       % (_AS.parts()[5][1].bounds[1][0], S.X_RIB_BACK + S.LOCK_T))
+
+# ------------------------------------------- which way the lock is loaded
+# Kevin asked whether the lock just travels with the rod. Half right, and
+# the half that is right is the half I had not taken in compression.
+#
+#   rod creeps BACK toward the motor -> lock is driven into the rib's back
+#       face. Compression on a printed wall. Nothing to fail.
+#   rod creeps FORWARD toward the syringe -> lock lifts off that face and
+#       hangs on two M3 in thread pullout. This is the real load path.
+#
+# The right answer would be a second lock outboard of the motor plate, so
+# that direction is compression too. It does not fit: the lock spans y 17
+# to 39 and the NEMA 17 body reaches y 21.15, so a same-shape lock would
+# foul the motor by 4.15 mm. Worth knowing, not worth building, because the
+# weak direction is still four orders of magnitude clear.
+_eng = S.LOCK_SCREW_L - S.LOCK_T
+check("the rib screws actually reach the rib",
+      _eng >= 6.0,
+      "M3 x %.0f spends %.0f mm crossing the lock and engages %.0f mm of "
+      "rib. An x16 would engage 4" % (S.LOCK_SCREW_L, S.LOCK_T, _eng))
+check("the rib screws do NOT come out the far side",
+      _eng < S.RIB_T,
+      "%.0f mm of thread in a %.0f mm rib, %.0f mm spare. Beyond the rib is "
+      "the gap the carriage sweeps into, so breaking through is a crash"
+      % (_eng, S.RIB_T, S.RIB_T - _eng))
+
+# Pullout against the thing it is actually resisting. The drag that walks a
+# rod is the bush sliding on it, not the piston load: the piston pushes the
+# CARRIAGE along the rod, it does not push the rod.
+_W = (S.build()["carriage"].volume / 1000.0 * 1.04 + 55.0) / 1000.0 * 9.81
+_walk = 0.005 * (_W + 20.0)              # 20 N of misalignment preload, generous
+_pull = 2 * (3.14159 * 3.0 * _eng * 0.6) * 25.0      # 2x M3 form in ABS
+check("the weak direction still wins by a wide margin",
+      _pull / _walk > 1000.0,
+      "%.0f N of thread pullout against %.2f N of bush drag, a margin of "
+      "%.0fx. The screws are not what to worry about here"
+      % (_pull, _walk, _pull / _walk))
+
+_motor_foul = S.MOTOR_SQ / 2 - (S.ROD_SPACING / 2 - S.LOCK_HALF)
+check("a second lock at the motor end would NOT fit as drawn",
+      _motor_foul > 0.0,
+      "the lock reaches y=%.0f and the NEMA 17 body reaches y=%.2f, so it "
+      "would foul the motor by %.2f mm. That is why forward is the pullout "
+      "direction and not a second compression face"
+      % (S.ROD_SPACING / 2 - S.LOCK_HALF, S.MOTOR_SQ / 2, _motor_foul))
