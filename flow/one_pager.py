@@ -97,7 +97,12 @@ def main():
                 bbox=dict(boxstyle="round,pad=0.28", facecolor="white",
                           edgecolor=col, linewidth=0.9))
 
-    QTR, SML, LUM = "1/4 in\n6.35 mm", "2 mm\nbore", "3 mm\n1/8 in barb"
+    # Labelled by BORE, with both ways to buy that bore underneath, because
+    # the number on the bag means inside diameter in one aisle and outside
+    # diameter in the other.
+    QTR = "6.35 mm bore\n1/4 barb or 3/8 push"
+    SML = "2 mm\nbore"
+    LUM = "3 mm\n1/8 in barb"
 
     X_JAR, X_DROP = 0.55, 1.05
     X_R1A, X_R1B = 1.60, 2.45
@@ -121,7 +126,9 @@ def main():
     lab(0.10, -0.70, "that height is\nthe whole push:\n%.0f mmHg" % mmhg(TANK),
         COOL, 10, ha="left", va="top")
     pipe(X_DROP, X_R1A)
-    bore(X_DROP, 2.35, QTR, COOL)
+    # No badge on the vertical drop: the horizontal run right below it
+    # carries the same one, and the wider label made this a collision with
+    # the 1.2 m dimension. Ten labels, not eleven.
     bore((X_DROP + X_R1A) / 2, 0.30, QTR, COOL)
 
     # ---------------------------------------------------------------- R1
@@ -271,17 +278,17 @@ def main():
     # and "3 mm" as the same thing.
     panel(0.030, "WHAT TO BUY", [
         ("THREE BORES, and only three:\n"
-         "1/4 inch = 6.35 mm    the trunk, most of the loop\n"
-         "1/8 inch = 3.18 mm    the last 150 mm into the block\n"
-         "2 mm                  R1, and nothing else", INK),
-        ("1/4 inch is NOT 3 mm. It is more than twice that.", HOT),
-        ("Braided PVC or Tygon, NOT silicone. Soft tube\n"
-         "soaks up the heartbeat instead of passing it on.", HOT),
-        ("Barbs are named for the TUBING they fit. A 1/8\n"
-         "inch barb takes 3 mm tubing, and that 0.18 mm\n"
-         "of stretch is what seals it.", INK),
-        ("A screw clamp for R2. Two single-inlet pressure\n"
-         "sensors, 0 to 40 kPa. A beaker and a scale.", INK),
+         "6.35 mm    the trunk, most of the loop\n"
+         "3.0 mm     the last 150 mm into the block\n"
+         "2.0 mm     R1, and nothing else", INK),
+        ("Barbed tubing is sold by INSIDE diameter, push-fit\n"
+         "by OUTSIDE. 6.35 mm bore is 1/4 in BARBED or 3/8 in\n"
+         "PUSH-FIT. 1/4 in push-fit is 4 mm and will NOT run.", HOT),
+        ("Push-fit is the better buy: rigid, hand-assembled\n"
+         "for the sweep, LLDPE 5x stiffer than braided PVC.\n"
+         "Never silicone, it soaks up the heartbeat.", HOT),
+        ("A screw clamp or needle valve for R2, not a ball\n"
+         "valve. Two 0-50 kPa single-inlet sensors. A scale.", INK),
     ])
 
     panel(0.385, "WHERE THE PUSH GOES", [
@@ -332,11 +339,11 @@ def main():
              "R2 is the deliverable.",
              fontsize=10.5, color=HOT, va="top", linespacing=1.5)
 
-    fig.text(0.5, 0.044,
+    fig.text(0.5, 0.056,
              "FOUR RULES THAT ARE EASY TO BREAK BY ACCIDENT",
              fontsize=10.5, color=INK, ha="center", fontweight="bold")
-    fig.text(0.5, 0.026,
-             "Nothing tees into the straight 3 mm run or the block.    "
+    fig.text(0.5, 0.040, va="top",
+             s="Nothing tees into the straight 3 mm run or the block.    "
              "The pump only refills the jar and never touches the loop.    "
              "The pump discharges below the surface, or it whips air into "
              "the fluid and air ruins the Doppler.\n"
