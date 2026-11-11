@@ -137,8 +137,8 @@ def main():
     A("  AND THE ONE THAT KILLS MOST INSTRUMENTS. The whole machine lives")
     A("  inside %.2f psi. A 0-30 psi dial gauge resolves %.0f mmHg per"
       % (pa_of_mm(H.TANK_MM) / PSI, 30.0 * PSI / MMHG * 0.01))
-    A("  percent of its scale, which is %.0f times the entire pulse."
-      % (30.0 * PSI / MMHG * 0.01 / (pa_of_mm(pulse) / MMHG) * 1))
+    A("  percent of its scale, which is %.0f percent of the entire pulse."
+      % (100.0 * (30.0 * PSI / MMHG * 0.01) / (pa_of_mm(pulse) / MMHG)))
 
     # -------------------------------------------------------------- figure
     fig, ax = plt.subplots(figsize=(11.6, 6.6), dpi=170)
