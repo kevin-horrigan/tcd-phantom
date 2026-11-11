@@ -311,6 +311,71 @@ def report():
     A("     it against the manometer, which is what 'a measured length' means.")
     A("")
 
+    # -------------------------------------------------------- what R2 is
+    import math as _m
+    q_gpm = Q_MEAN * 1e-3 / 3.785412 * 60.0 / 60.0
+    sg = RHO / 1000.0
+    A("R2: WHAT TO BUY, AND WHY THE OBVIOUS PARTS ARE THE WRONG SIZE")
+    A("  R2 has to sit around %.0f mm of head at %.0f mL/min and sweep either"
+      % (left_now if False else 169.0, Q_MEAN))
+    A("  side of it. In valve terms that is a flow coefficient:")
+    A("  %-16s %9s %10s" % ("R2 at", "psi", "Cv wanted"))
+    for mm in (50.0, 169.0, 300.0, 400.0):
+        psi = RHO * G * mm * 1e-3 / PSI
+        A("  %-16s %9.3f %10.3f"
+          % ("%.0f mm of head" % mm, psi, q_gpm * _m.sqrt(sg / psi)))
+    A("")
+    A("  So R2 wants a Cv of roughly 0.09 to 0.25. Now the same list read")
+    A("  backwards, which is the part that decides it:")
+    A("  %-32s %8s %12s" % ("a valve whose full-open Cv is", "Cv", "gives"))
+    for cv, what in ((0.03, "fine metering valve"), (0.1, "small needle valve"),
+                     (0.3, "ordinary needle valve"), (1.0, "1/4 in ball valve"),
+                     (4.0, "3/8 in ball valve")):
+        mm = sg * (q_gpm / cv) ** 2 * PSI / (RHO * G) * 1e3
+        A("  %-32s %8.2f %9.0f mm" % (what, cv, mm))
+    A("")
+    A("  A ball valve wide open gives nothing, so every setting you care")
+    A("  about lives in the first few degrees of handle. That is not an")
+    A("  opinion about ball valves, it is the %.0f mm in that row."
+      % (sg * (q_gpm / 1.0) ** 2 * PSI / (RHO * G) * 1e3))
+    A("  A fine metering valve is the opposite error: %.0f mm WIDE OPEN,"
+      % (sg * (q_gpm / 0.03) ** 2 * PSI / (RHO * G) * 1e3))
+    A("  which is more than the jar has, so the loop never runs.")
+    A("  An ordinary needle valve at Cv 0.3 gives %.0f mm wide open and"
+      % (sg * (q_gpm / 0.3) ** 2 * PSI / (RHO * G) * 1e3))
+    A("  closes into the range. That is the right size.")
+    A("")
+    A("  THE PROBLEM: cheap needle valves do not publish Cv. So here is the")
+    A("  test that needs no datasheet. Plumb it in WIDE OPEN and read the")
+    A("  manometer. It should cost 30 to 50 mm of head at the working flow.")
+    A("  Near zero and it is a ball valve in disguise. Hundreds and it is a")
+    A("  metering valve and will not pass the flow.")
+    A("")
+    A("  AND THE OPTION THAT NEEDS NO VALVE AT ALL. R1 is a measured length")
+    A("  of the kit's 1/4 in tube, and R2 can be the same thing with a screw")
+    A("  clamp on it:")
+    A("  %-12s %16s %16s" % ("R2 head", "of 4.0 mm tube", "of 6.35 mm tube"))
+    for mm in (50.0, 169.0, 400.0):
+        A("  %-12s %13.0f mm %13.0f mm"
+          % ("%.0f mm" % mm, r1_length(bore=4.0, forward=mm / TANK_MM),
+             r1_length(bore=6.35, forward=mm / TANK_MM)))
+    A("  Cut about 190 mm of the 4 mm tube and it reads %.0f mm wide open,"
+      % (190.0 / r1_length(bore=4.0, forward=1.0 / TANK_MM)))
+    A("  which is the bottom of the sweep, and the clamp takes it up from")
+    A("  there. Clamp the 6.35 mm trunk instead and the same 190 mm starts at")
+    A("  %.0f mm, six times further from the target, so the pinch has to be"
+      % (190.0 / r1_length(bore=6.35, forward=1.0 / TANK_MM)))
+    A("  that much harder and it creeps that much more.")
+    A("")
+    A("  AND THE REASON THE CHEAP OPTION IS NOT A COMPROMISE: a sweep does")
+    A("  not need a repeatable DIAL, it needs a known RESISTANCE at each")
+    A("  point. The manometer gives the pressure and the gravimetric catch")
+    A("  gives the flow, so R2 is measured every time it is moved. The axis")
+    A("  of the map is measured resistance, not turns of a screw, and a")
+    A("  clamp that drifts between points does not matter because the point")
+    A("  is remeasured.")
+    A("")
+
     A("WHAT EACH CANDIDATE VALVE COSTS, AND THE RESERVOIR HEIGHT IT FORCES")
     A("  The constriction is the only knob that sets diastolic pressure, so it")
     A("  needs to be the biggest term in the budget, not the leftovers. Below,")

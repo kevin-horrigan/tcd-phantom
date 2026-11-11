@@ -88,6 +88,18 @@ BOM = [
      "BUY", "the 150 mm settling run into the block, plus spares. 1/8 in ID "
             "at 3.18 mm is the commodity equivalent and fits a 1/8 in barb"),
 
+    ("FLUID INTERFACE", 1, "R2, the adjustable resistance",
+     "190 mm of the kit's 1/4 in tube + a screw clamp", "BUY",
+     "THE CLAMP IS THE ONLY THING TO BUY. Hoffman screw compressor clamp, "
+     "lab supply, a few dollars. 190 mm of the 4 mm tube reads 51 mm of "
+     "head wide open, which is the bottom of the sweep, and the clamp takes "
+     "it up from there. Clamping the 6.35 mm trunk instead starts at 8 mm, "
+     "six times further from target, so the pinch is harder and it creeps "
+     "more. A needle valve also works IF its full-open Cv is near 0.3: the "
+     "test without a datasheet is that wide open it should cost 30 to 50 mm "
+     "of head at 250 mL/min. A ball valve gives 3 mm wide open, so every "
+     "setting lives in the first few degrees of handle. See head_budget.py"),
+
     ("FLUID INTERFACE", 1, "RO push-fit kit, 1/4 + 3/8 in",
      "25 fittings, 30 ft of each tube, NSF, about 36 USD", "BUY",
      "covers the whole loop in one box, and the two reels do two different "
