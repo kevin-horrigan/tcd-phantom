@@ -55,6 +55,7 @@ C_COLLAR = "#8c6b4d"
 C_CAP = "#a89e90"
 C_CLAMP = "#75618a"
 C_LOCK = "#6f8c6a"
+C_STOP = "#5c8c85"
 C_STEEL = "#949aa3"
 C_SCREW = "#b89a40"
 C_MOTOR = "#434850"
@@ -123,6 +124,10 @@ def parts():
         P["rod_lock"],
         P["rod_lock"].copy().apply_transform(
             trimesh.transformations.scale_matrix(-1.0, [0, 0, 0], [0, 1, 0]))])
+    stops = trimesh.util.concatenate([
+        P["rod_stop"],
+        P["rod_stop"].copy().apply_transform(
+            trimesh.transformations.scale_matrix(-1.0, [0, 0, 0], [0, 1, 0]))])
     bushes = trimesh.util.concatenate([
         ring_x(S.LM_OD, S.ROD_D, (CARR_AT + 3.0, CARR_AT + 3.0 + S.LM_L),
                y=dy, z=S.SCREW_H)
@@ -170,6 +175,21 @@ def parts():
          "HARDENED, not 304 stainless: a recirculating ball bush brinells "
          "soft shafting and the carriage then rumbles. Teardrop bores, so "
          "they print round and the shafts press rather than rattle."),
+
+        ("rod stop x2", stops, C_STOP, [0, 0, 210],
+         "This one goes on DURING the last step, not after it. Stop pushing "
+         "each shaft when its end is in the gap just before the rib, slip a "
+         "stop on there, then push the shaft home. The bore is closed, so "
+         "there is no adding it later without pulling a shaft back out. "
+         "Pinch the M3 x 12 and slide it up against the rib's front face. "
+         "It is a plain collar with no screws into the frame and it does not "
+         "need any: the carriage pushing the plunger also nudges the shafts "
+         "forward, and this turns that into compression against the rib "
+         "instead of pull on the lock's threads. With the lock on the back "
+         "face the two SANDWICH the rib, so the shafts are pinned both ways "
+         "by printed walls in compression. It costs 4 mm off the forward end "
+         "of the carriage sweep, which is 0.48 mL out of 5.4 mL of priming "
+         "headroom on a 0.50 mL beat."),
 
         ("rod lock x2", locks, C_LOCK, [110, 0, 0],
          "Slide a lock onto each shaft end and bolt it to the back of the "
@@ -317,7 +337,7 @@ def main():
         manifest.append(dict(
             name=name, step=k, text=text, color=color, explode=explode,
             printed=color in (C_FRAME, C_CARRIAGE, C_COLLAR, C_CAP,
-                              C_CLAMP, C_LOCK),
+                              C_CLAMP, C_LOCK, C_STOP),
             moving=name in MOVING,
             mL=round(float(mesh.volume) / 1000.0, 2),
             vOff=off, nV=len(v) // 3, fOff=off + v.nbytes, nF=len(f) // 3))

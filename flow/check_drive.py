@@ -715,7 +715,7 @@ _assembled = set(n for n, _m, _c, _e, _t in _AS.parts())
 _PRINTED_IN_ASSY = {"frame": "frame", "carriage": "carriage",
                     "saddle_cap": "saddle cap + ties", "collar":
                     "split collars x2", "rod_clamp": "rod clamp",
-                    "rod_lock": "rod lock x2"}
+                    "rod_lock": "rod lock x2", "rod_stop": "rod stop x2"}
 check("every printed part is in the 3-D assembly",
       set(_PRINTED_IN_ASSY) == _built - {"fit_coupon"},
       "missing from the assembly map: %s"
@@ -779,3 +779,56 @@ check("a second lock at the motor end would NOT fit as drawn",
       "would foul the motor by %.2f mm. That is why forward is the pullout "
       "direction and not a second compression face"
       % (S.ROD_SPACING / 2 - S.LOCK_HALF, S.MOTOR_SQ / 2, _motor_foul))
+
+# --------------------------------------- the forward stop, and what it costs
+# The rib lock takes travel toward the motor in compression and travel toward
+# the syringe in thread pullout. rod_stop() makes the second one compression
+# too, by sitting inboard of the rib. The pair sandwich the rib.
+check("the stop lands on solid rib face",
+      S.ROD_SPACING / 2 - S.LOCK_HALF > S.BEAR_OD / 2 + 0.1,
+      "stop inner edge y=%.0f against a 608 pocket reaching y %.1f, and the "
+      "saddle cut does not start until z %.1f"
+      % (S.ROD_SPACING / 2 - S.LOCK_HALF, S.BEAR_OD / 2 + 0.1,
+         S.SYR_H - S.SADDLE_BORE / 2 - S.FIT))
+
+_lost = S.STOP_T - (S.X_RIB - S.X_CARR_FRONT)
+check("the stop eats forward travel, and the amount is affordable",
+      0.0 < _lost <= 6.0,
+      "%.0f mm of the %.0f mm stop sits in the gap that already existed, so "
+      "the sweep loses %.0f mm = %.2f mL. The beat is %.2f mL and there is "
+      "%.1f mL of priming headroom, so this is %.0f%% of the slack"
+      % (S.X_RIB - S.X_CARR_FRONT, S.STOP_T, _lost,
+         _lost * S.BORE_A / 1000.0, S.BEAT_ML,
+         (S.TRAVEL - S.BEAT_MM) * S.BORE_A / 1000.0,
+         100.0 * _lost / (S.TRAVEL - S.BEAT_MM)))
+
+check("the carriage can no longer reach the rib, which is the point",
+      S.X_STOP < S.X_CARR_FRONT,
+      "the carriage used to sweep to X=%.0f with the rib at %.0f. The stop "
+      "now occupies X %.0f to %.0f, so X=%.0f is the forward limit and a "
+      "crash lands on the rod and the rib, not on the carriage face"
+      % (S.X_CARR_FRONT, S.X_RIB, S.X_STOP, S.X_RIB, S.X_STOP))
+
+check("the stop is thick enough for its own pinch screw",
+      S.STOP_T - S.M3_TAP >= 4.0,
+      "%.1f mm body around a %.1f mm tapped hole leaves %.1f mm of wall each "
+      "side. A 4 mm stop, which is all the old gap allowed, would leave %.1f"
+      % (S.STOP_T, S.M3_TAP, (S.STOP_T - S.M3_TAP) / 2.0,
+         (4.0 - S.M3_TAP) / 2.0))
+
+check("the rib is sandwiched, so the rod is pinned both ways in compression",
+      abs(S.X_RIB_BACK - S.X_RIB - S.RIB_T) < 1e-9,
+      "stop on the front face at X=%.0f, lock on the back face at X=%.0f, "
+      "%.0f mm of printed wall between them and the rod clamped to both"
+      % (S.X_RIB, S.X_RIB_BACK, S.RIB_T))
+
+# What the carriage actually transmits into a rod, which is the whole premise.
+_F_piston = 20.0                        # seal stiction dominates; 120 mmHg is 1.9 N
+_axial = 0.005 * (_W + 20.0)
+check("a ball bush does not transmit the piston load into the rod",
+      _axial < _F_piston / 50.0,
+      "the piston's %.0f N goes plunger -> carriage -> nut -> screw -> 608. "
+      "What reaches the rod is mu times the bush's radial load, %.2f N, "
+      "which is %.0fx smaller. Even a fully seized bush at %.0f N is %.0fx "
+      "inside the stop's grip"
+      % (_F_piston, _axial, _F_piston / _axial, _F_piston, 300.0 / _F_piston))

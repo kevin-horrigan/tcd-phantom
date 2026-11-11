@@ -201,6 +201,33 @@ LOCK_SCREW_L = 20.0      # the rib screws, and the length is load bearing.
                          # longest that does not break out into the gap the
                          # carriage sweeps. See the check in check_drive.
 
+# ------------------------------------------------------- rod stop (forward)
+# Kevin, twice: the carriage pushing the plunger also pushes the rods toward
+# the syringe, so the rib lock has to resist FORWARD travel in tension. He is
+# right about the direction. The magnitude is small, because a recirculating
+# ball bush is exactly the part whose job is to not transmit axial force: the
+# piston's 2 to 20 N goes plunger -> carriage -> nut -> screw -> 608, and what
+# reaches the rod is mu times the bush's radial load, under 0.2 N. But "small"
+# is an argument for not worrying, not an argument for a tension joint when a
+# compression one is available for one more small part.
+#
+# So: a plain split collar INBOARD of the rib, bearing on the rib's front
+# face. Forward walk now drives it into that face, which is compression on a
+# 9 mm printed wall. With the lock on the back face taking the other
+# direction, the two SANDWICH the rib and the rod is positively located both
+# ways, in compression, with nothing hanging on a thread.
+#
+# This is the second of Kevin's two candidate positions. The first, outboard
+# of the motor plate, is the better place architecturally and does not fit:
+# the NEMA 17 body reaches y 21.15 and the rod bore's inner edge is at 23.85,
+# which leaves 1.7 mm of wall inboard of the bore after motor clearance. That
+# is two perimeters holding a clamp. The rib's front face has no such problem.
+#
+# Cost: the stop is STOP_T thick and only (X_RIB - X_CARR_FRONT) of that fits
+# in the gap that already existed, so the carriage loses the difference off
+# the forward end of its sweep. See the check in check_drive.
+STOP_T = 8.0             # thick enough for an M3 boss, see the check
+
 
 # ------------------------------------------------------------------ guidance
 ROD_D, ROD_SPACING = 8.0, 56.0       # two 8 mm smooth rods, centre to centre
@@ -507,6 +534,8 @@ X_SADDLE_END = X_RIB_BACK + FRAME_SADDLE_L
 X_END = X_SADDLE_END + 6.0
 HALF_W = ROD_SPACING / 2 + LM_OD / 2 + 5.0
 
+X_STOP = X_RIB - STOP_T        # the stop's own -X face
+
 SPRING_POST_D = 5.0
 SCREW_SPAN = X_RIB_BACK - X_MOTOR_BACK
 
@@ -712,6 +741,45 @@ def rod_lock():
     return body
 
 
+def rod_stop():
+    """The forward stop. One per rod, INBOARD of the rib, bearing on its
+    front face. Print two.
+
+    A plain split collar and nothing more: no screws into the frame, because
+    it does not need any. Forward travel of the rod drives it into the rib,
+    and the rib takes that in compression. The only fastener is the M3 that
+    pinches it onto the rod.
+
+    It goes on DURING rod insertion, not after. Feed the rod in from the
+    motor end, through the carriage bush, and stop when the end is in the
+    gap before the rib. Slip the stop on there, then push the rod home
+    through the rib and fit the lock on the back. There is no way to add it
+    afterwards without pulling a rod back out, because the bore is closed.
+    """
+    y0 = ROD_SPACING / 2
+    x0, x1 = X_STOP, X_RIB
+    xm = (x0 + x1) / 2.0
+    zc = SCREW_H
+
+    body = box((x0, x1), (y0 - LOCK_HALF, y0 + LOCK_HALF),
+               (zc - LOCK_HALF, zc + LOCK_HALF))
+
+    # Same clamp fit as the lock: it slides on, the screw holds it.
+    body = diff(body, cyl_x(ROD_D / 2 + 0.075 + HOLE_SHRINK / 2.0,
+                            (x0 - 1, x1 + 1), y=y0, z=zc))
+
+    # Split outboard, so the pinch screw comes down from the top where a
+    # driver can reach it with the rib right there.
+    body = diff(body, box((x0 - 1, x1 + 1), (y0, y0 + LOCK_HALF + 2.0),
+                          (zc - 0.7, zc + 0.7)))
+
+    body = diff(body, cyl_z(M3 / 2, (zc + 0.7, zc + LOCK_HALF + 1),
+                            x=xm, y=y0 + LOCK_SCREW_Y))
+    body = diff(body, cyl_z(M3_TAP / 2, (zc - LOCK_HALF - 1, zc - 0.7),
+                            x=xm, y=y0 + LOCK_SCREW_Y))
+    return body
+
+
 def carriage():
     x0, x1 = 0.0, CARRIAGE_L
     z0 = SCREW_H - LM_OD / 2 - 2.5
@@ -831,7 +899,7 @@ def build():
     return {"frame": frame(), "carriage": carriage(),
             "saddle_cap": saddle_cap(), "collar": collar(),
             "rod_clamp": rod_clamp(), "rod_lock": rod_lock(),
-            "fit_coupon": fit_coupon()}
+            "rod_stop": rod_stop(), "fit_coupon": fit_coupon()}
 
 
 def report(parts):

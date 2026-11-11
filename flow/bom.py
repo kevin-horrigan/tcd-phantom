@@ -43,8 +43,15 @@ BOM = [
      "carriage sweeps to within 4 mm of the rib. This one clamps the rod "
      "with an M3 AND bolts to the rib with two more, so the rod is fixed to "
      "the frame and cannot walk either way"),
-    ("FASTENERS", 2, "M3 x 12 socket cap", "rod lock pinch screw", "BUY",
-     "one per rod lock, pulls the C shut on the rod"),
+    ("FASTENERS", 4, "M3 x 12 socket cap", "rod lock and rod stop pinch", "BUY",
+     "one per rod lock and one per rod stop, pulls the C shut on the rod"),
+    ("PRINTED", 2, "rod_stop", "3.2 mL each, ~9 min", "PRINT",
+     "The forward stop, inboard of the rib. The rib lock alone takes travel "
+     "toward the motor in compression and travel toward the syringe in "
+     "thread pullout, and the carriage pushing the plunger nudges the rods "
+     "the second way. This collar turns that into compression on the rib's "
+     "front face. No screws into the frame: it does not need any. Goes on "
+     "DURING rod insertion, the bore is closed"),
     ("FASTENERS", 4, "M3 x %.0f thread-forming" % S.LOCK_SCREW_L,
      "rod lock into the rib", "BUY",
      "two per rod lock, and the length is NOT free. 12 mm of the screw is "

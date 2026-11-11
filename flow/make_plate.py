@@ -32,13 +32,27 @@ GAP = 8.0                                # mm between parts and to the edge
 BED = 220.0
 
 # name, how many. Order is the print order from print_plate.
-WANT = [("collar", 2), ("rod_clamp", 1), ("saddle_cap", 1)]
+PLATES = {
+    "small": [("collar", 2), ("rod_clamp", 1), ("saddle_cap", 1)],
+    # Both rod retainers together. They are the same job in two directions
+    # and they go on in the same five minutes of assembly, so printing them
+    # apart would be two ABS heat cycles for 38 minutes of extrusion.
+    "rods": [("rod_lock", 2), ("rod_stop", 2)],
+}
+WANT = PLATES["small"]
 
 
 def main():
+    import sys
+    name = sys.argv[1] if len(sys.argv) > 1 else "small"
+    if name not in PLATES:
+        raise SystemExit("plates: %s" % ", ".join(sorted(PLATES)))
+    want = PLATES[name]
+    global OUT
+    OUT = os.path.join(HERE, "stl", "plate_%s.stl" % name)
     orient = {n: (a, ax) for n, (a, ax), _c in P.ORIENT}
     parts = []
-    for name, n in WANT:
+    for name, n in want:
         ang, axis = orient[name]
         m = P.oriented(getattr(S, name)(), ang, axis)
         for _ in range(n):
