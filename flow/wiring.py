@@ -1,214 +1,304 @@
 # -*- coding: utf-8 -*-
-"""Pin-level wiring for the piston bench test, Pico 2 to TMC2209 to motor.
+"""How P1 and P2 wire to the Pico, and what they can and cannot tell you.
 
-    python wiring.py      ->  wiring.png
+    python wiring.py          -> wiring.png, plus the numbers
 
-Pico pin numbers are physical header positions, which are the same on a Pico 2
-as on a Pico 1. Driver pin numbers are from table 5.2 of the BIGTREETECH
-TMC2209 manual. Every driver pin is silkscreened, so go by the printed label
-and not by which end of the row you think is pin 1. The two rows are drawn
-here on whichever side keeps the wires untangled, not in board orientation.
+ASSUMES THE MPX5050GP, which is what bom.py and GROUP-2_phase0-bench-rig.md
+specify. If the part that arrived is a different MPX5xxx the wiring is
+identical and only SENS and the full scale change, both of which live in
+pico/pressure.py.
+
+THE ONE THING THAT WILL BREAK A PICO. The sensor wants 4.75 to 5.25 V and
+swings its output to 4.70 V at full scale. The Pico's ADC pin is 3.3 V. Wire
+the output straight to GP26 and you are putting 4.7 V into a 3.3 V pin.
+
+Running the sensor at 3.3 V instead looks like the easy way out and is not:
+the datasheet specifies 4.75 V minimum and calls the device ratiometric only
+"within this specified excitation range". Below that you are off the
+characterised curve with no way to know by how much. Supply it properly and
+divide the output.
 """
 import os
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle, Circle, FancyBboxPatch
+from matplotlib.patches import FancyBboxPatch, Rectangle
+
+import pressures as PR
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.join(HERE, "wiring.png")
 
-INK, GREY, PALE = "#1b1b1b", "#7a7a7a", "#eceff2"
-SIG, PWR, GND, IO = "#2f6fb0", "#c0392b", "#2b2b2b", "#d98324"
-CA, CB = "#1f8a70", "#8e44ad"
+VS = 5.0
+R_TOP, R_BOT = 10.0e3, 20.0e3
+CAP = 0.47e-6
+ADC_REF, ADC_BITS = 3.3, 12
+SENS, OFFSET = 0.018, 0.04          # Vout = VS * (SENS * P_kPa + OFFSET)
+FS_KPA = 50.0
+MMHG_PER_KPA = 1000.0 / 133.322
 
-PICO = ["GP0", "GP1", "GND", "GP2", "GP3", "GP4", "GP5", "GND", "GP6", "GP7",
-        "GP8", "GP9", "GND", "GP10", "GP11", "GP12", "GP13", "GND", "GP14",
-        "GP15", "GP16", "GP17", "GND", "GP18", "GP19", "GP20", "GP21", "GND",
-        "GP22", "RUN", "GP26", "GP27", "AGND", "GP28", "ADC_VREF", "3V3(OUT)",
-        "3V3_EN", "GND", "VSYS", "VBUS"]
-J1 = ["EN", "MS1", "MS2", "PDN/UART", "PDN", "CLK", "STEP", "DIR"]
-J2 = ["VM", "GND", "A2", "A1", "B1", "B2", "VCC_IO", "GND"]
-USED_PICO = {3: GND, 4: SIG, 5: SIG, 6: SIG, 36: IO}
-USED_J1 = {1: SIG, 7: SIG, 8: SIG}
-USED_J2 = {1: PWR, 2: GND, 3: CA, 4: CA, 5: CB, 6: CB, 7: IO, 8: GND}
-
-fig, ax = plt.subplots(figsize=(15.0, 9.4), dpi=160)
-fig.patch.set_facecolor("white")
-
-# ------------------------------------------------------------------ Pico
-PX, PY, PW, PH = 11.2, 0.9, 3.1, 7.4
-ax.add_patch(FancyBboxPatch((PX, PY), PW, PH, boxstyle="round,pad=0.06",
-                            facecolor=PALE, edgecolor=INK, lw=1.3, zorder=2))
-ax.add_patch(Rectangle((PX + PW / 2 - 0.42, PY + PH - 0.30), 0.84, 0.40,
-                       facecolor="#b9c0c7", edgecolor=INK, lw=0.9, zorder=3))
-ax.text(PX + PW / 2, PY + PH + 0.24, "USB", ha="center", fontsize=8, color=GREY)
-ax.text(PX + PW / 2, PY + PH - 0.72, "Raspberry Pi Pico 2\nRP2350   COM15",
-        ha="center", va="top", fontsize=9.5, color=INK, fontweight="semibold",
-        linespacing=1.5)
-
-pico = {}
-ptop = PY + PH - 1.45
-for i in range(1, 41):
-    left = i <= 20
-    y = ptop - ((i - 1) if left else (40 - i)) * 0.295
-    x = PX + 0.30 if left else PX + PW - 0.30
-    c = USED_PICO.get(i)
-    ax.add_patch(Circle((x, y), 0.072, facecolor=c or "white",
-                        edgecolor=c or GREY, lw=1.0, zorder=4))
-    ax.text(x + (0.16 if left else -0.16), y,
-            ("%d  %s" % (i, PICO[i - 1])) if left else ("%s  %d" % (PICO[i - 1], i)),
-            ha="left" if left else "right", va="center", fontsize=6.6,
-            color=c or GREY, zorder=5, fontweight="bold" if c else "normal")
-    pico[i] = (x, y)
-
-# --------------------------------------------------------------- TMC2209
-DX, DY, DW, DH = 6.3, 3.0, 2.5, 4.2
-ax.add_patch(FancyBboxPatch((DX, DY), DW, DH, boxstyle="round,pad=0.06",
-                            facecolor=PALE, edgecolor=INK, lw=1.3, zorder=2))
-ax.text(DX + DW / 2, DY + DH + 0.50, "BIGTREETECH TMC2209", ha="center",
-        fontsize=9.5, color=INK, fontweight="semibold")
-ax.text(DX + DW / 2, DY + DH + 0.25, "15.2 x 20.3 mm", ha="center",
-        fontsize=7.4, color=GREY)
-ax.add_patch(Rectangle((DX + 0.62, DY + 1.25), DW - 1.24, 1.5,
-                       facecolor="#cfd4d9", edgecolor=GREY, lw=0.8, zorder=3))
-ax.text(DX + DW / 2, DY + 2.0, "TMC2209", ha="center", va="center",
-        fontsize=7.2, color="#4a4a4a", zorder=4)
-
-j1, j2 = {}, {}
-jtop = DY + DH - 0.45
-for i in range(1, 9):
-    y = jtop - (i - 1) * 0.44
-    for side, names, store, used in ((1, J1, j1, USED_J1), (0, J2, j2, USED_J2)):
-        x = DX + 0.22 + side * (DW - 0.44)
-        c = used.get(i)
-        ax.add_patch(Rectangle((x - 0.065, y - 0.065), 0.13, 0.13,
-                               facecolor=c or "white", edgecolor=c or GREY,
-                               lw=1.0, zorder=4))
-        # labels sit just above the pin so the incoming wire passes under them
-        ax.text(x + (0.13 if side else -0.13), y + 0.10,
-                ("%d %s" % (i, names[i - 1])) if side
-                else ("%s %d" % (names[i - 1], i)),
-                ha="left" if side else "right", va="bottom", fontsize=6.8,
-                color=c or GREY, zorder=5, fontweight="bold" if c else "normal")
-        store[i] = (x, y)
-ax.text(DX + DW + 0.15, jtop + 0.56, "J1", fontsize=8, color=GREY)
-ax.text(DX - 0.15, jtop + 0.56, "J2", fontsize=8, color=GREY, ha="right")
-
-vref = (DX + DW / 2, DY + DH - 0.08)
-ax.add_patch(Circle(vref, 0.075, facecolor="white", edgecolor=PWR, lw=1.2,
-                    zorder=5))
-# A window, not a point. The pot moves 0.1 to 0.2 V per nudge, so asking for
-# 0.53 V exactly is asking for an afternoon. Anything from 0.50 to 0.64 V
-# works: below is the datasheet floor, above is where the phase can no longer
-# reverse inside the beat. Set on 2026-11-10 to 0.556 V = 0.393 A.
-ax.annotate("VREF.  Anywhere from 0.50 to 0.64 V against GND.\n"
-            "Below 0.50 the datasheet says not recommended;\n"
-            "above 0.64 the phase cannot reverse at speed.\n"
-            "Ships at 1.2 V = 0.9 A.  Needs the Pico powered:\n"
-            "the pot divides VCC_IO, so 12 V alone reads 0 V.",
-            vref, (DX + DW / 2, DY + DH + 1.05), fontsize=7.8, color=PWR,
-            ha="center", va="bottom", linespacing=1.6, zorder=8,
-            arrowprops=dict(arrowstyle="-", color=PWR, lw=0.8))
-
-# ------------------------------------------------------- brick and motor
-BX, BY, BW, BH = 0.7, 6.9, 2.2, 1.1
-ax.add_patch(FancyBboxPatch((BX, BY), BW, BH, boxstyle="round,pad=0.05",
-                            facecolor="white", edgecolor=INK, lw=1.2, zorder=2))
-ax.text(BX + BW / 2, BY + BH - 0.20, "12 V brick", ha="center", va="top",
-        fontsize=9.2, color=INK, fontweight="semibold")
-ax.text(BX + BW / 2, BY + BH - 0.50, "5.5 x 2.5 barrel into\nscrew terminals",
-        ha="center", va="top", fontsize=7.0, color=GREY, linespacing=1.5)
-
-MX, MY, MW, MH = 0.7, 4.2, 2.2, 1.9
-ax.add_patch(Rectangle((MX, MY), MW, MH, facecolor="#b08c3a", edgecolor=INK,
-                       lw=1.2, zorder=2))
-ax.text(MX + MW / 2, MY + MH - 0.35, "motor", ha="center", va="center",
-        fontsize=9.5, color="white", fontweight="semibold", zorder=3)
-ax.text(MX + MW / 2, MY + 0.55, "pancake, 48 mm,\nor the old one",
-        ha="center", va="center", fontsize=7.2, color="white", zorder=3,
-        linespacing=1.5)
-ax.text(MX + MW / 2, MY - 0.22,
-        "Two leads that read a few ohms to each other are ONE coil.\n"
-        "Put one coil on A1 and A2, the other on B1 and B2.\n"
-        "A coil split across A and B buzzes and will not turn.",
-        ha="center", va="top", fontsize=7.6, color=INK, linespacing=1.6)
+INK = "#1a1a1a"
+RED = "#b3202c"
+BLU = "#1f4e79"
+GRN = "#2e6b34"
+PAPER = "#ffffff"
 
 
-def route(pts, color, label, at=None, lw=1.5, off=0.10):
-    xs = [p[0] for p in pts]
-    ys = [p[1] for p in pts]
-    ax.plot(xs, ys, color=color, lw=lw, solid_joinstyle="miter", zorder=6)
-    if label:
-        i = at if at is not None else 0
-        mx = (xs[i] + xs[i + 1]) / 2
-        my = (ys[i] + ys[i + 1]) / 2
-        ax.text(mx, my + off, label, ha="center", va="bottom", fontsize=7.4,
-                color=color, zorder=7, bbox=dict(fc="white", ec="none", pad=0.8))
+def numbers():
+    div = R_BOT / (R_TOP + R_BOT)
+    v0 = VS * OFFSET
+    vfs = VS * (SENS * FS_KPA + OFFSET)
+    rsrc = R_TOP * R_BOT / (R_TOP + R_BOT)
+    fc = 1.0 / (2.0 * 3.14159265 * rsrc * CAP)
+    counts = 2 ** ADC_BITS
+    lsb_v = ADC_REF / counts
+    lsb_kpa = lsb_v / div / VS / SENS
+    load_ma = vfs / (R_TOP + R_BOT) * 1000.0
+    return dict(div=div, v0=v0, vfs=vfs, v0d=v0 * div, vfsd=vfs * div,
+                rsrc=rsrc, fc=fc, lsb_v=lsb_v, lsb_kpa=lsb_kpa,
+                lsb_mmhg=lsb_kpa * MMHG_PER_KPA, load_ma=load_ma,
+                fs_mmhg=FS_KPA * MMHG_PER_KPA)
 
 
-# signals: Pico left column straight across to J1
-route([pico[4], (10.3, pico[4][1]), (10.3, j1[7][1]), j1[7]], SIG,
-      "GP2  pin 4   ->   STEP  J1-7", at=2)
-route([pico[5], (9.95, pico[5][1]), (9.95, j1[8][1]), j1[8]], SIG,
-      "GP3  pin 5   ->   DIR  J1-8", at=2)
-route([pico[6], (10.65, pico[6][1]), (10.65, j1[1][1]), j1[1]], SIG,
-      "GP4  pin 6   ->   EN  J1-1    active low", at=2)
+def report():
+    n = numbers()
+    A = print
+    A("THE PART")
+    A("  MPX5050GP, 6-pin SIP. From the datasheet:")
+    A("    supply          4.75 / 5.00 / 5.25 V. NOT 3.3 V")
+    A("    supply current  7 mA typical, 10 mA max, so 20 mA for the pair")
+    A("    transfer        Vout = VS x (0.018 x P + 0.04), P in kPa")
+    A("    full scale      50 kPa = %.0f mmHg, at %.2f V" % (n["fs_mmhg"], n["vfs"]))
+    A("    zero            %.2f V, which is NOT 0 V. That gap is a diagnostic"
+      % n["v0"])
+    A("    accuracy        +-2.5%% of full scale = +-%.1f mmHg"
+      % (0.025 * n["fs_mmhg"]))
+    A("    response        1.0 ms")
+    A("    pins 4, 5, 6    NO CONNECT. Leave them")
+    A("")
+    A("  PIN 1 IS BY THE NOTCH in the side of the package. Check it against")
+    A("  the part in your hand before power goes on. Backwards puts 5 V into")
+    A("  the output pin and the part is gone.")
+    A("")
 
-# logic rail and ground, routed under everything to the J2 side
-route([pico[3], (11.0, pico[3][1]), (11.0, 1.85), (5.75, 1.85),
-       (5.75, j2[8][1]), j2[8]], GND, "GND  pin 3   ->   GND  J2-8", at=2)
-route([pico[36], (14.55, pico[36][1]), (14.55, 0.42), (5.4, 0.42),
-       (5.4, j2[7][1]), j2[7]], IO, "3V3(OUT)  pin 36   ->   VCC_IO  J2-7", at=2)
+    A("THE DIVIDER, and why it is not optional")
+    A("  Sensor swings to %.2f V. The Pico ADC tops out at %.1f V."
+      % (n["vfs"], ADC_REF))
+    A("    %.0fk over %.0fk       ratio %.3f" % (R_TOP / 1e3, R_BOT / 1e3, n["div"]))
+    A("    zero reads         %.3f V at the pin" % n["v0d"])
+    A("    full scale reads   %.3f V at the pin, under %.1f with room to spare"
+      % (n["vfsd"], ADC_REF))
+    A("    loads the sensor   %.2f mA" % n["load_ma"])
+    A("")
+    A("  The 0.47 uF across the lower resistor is the anti-alias filter, not")
+    A("  decoration. Source impedance is %.1fk, so it rolls off at %.0f Hz."
+      % (n["rsrc"] / 1e3, n["fc"]))
+    A("  The sensor answers in 1 ms, which is 1 kHz of bandwidth, and")
+    A("  sampling that at 250 Hz without a filter folds every bit of it back")
+    A("  into the band we care about. It also gives the ADC a low impedance")
+    A("  to charge from, which a bare %.1fk divider would not."
+      % (n["rsrc"] / 1e3))
+    A("")
 
-# brick down into the top of J2
-route([(BX + BW, BY + 0.80), (4.75, BY + 0.80), (4.75, j2[1][1]), j2[1]], PWR,
-      "12 V  ->  VM  J2-1", at=0)
-route([(BX + BW, BY + 0.22), (4.25, BY + 0.22), (4.25, j2[2][1]), j2[2]], GND,
-      "0 V  ->  GND  J2-2", at=0)
+    A("WHAT YOU GET")
+    A("  one ADC count      %.3f mV = %.4f kPa = %.3f mmHg"
+      % (n["lsb_v"] * 1000, n["lsb_kpa"], n["lsb_mmhg"]))
+    A("  sensor's own error +-%.1f mmHg" % (0.025 * n["fs_mmhg"]))
+    A("")
+    A("  So the ADC is %.0f times finer than the sensor. The divider costs"
+      % (0.025 * n["fs_mmhg"] / n["lsb_mmhg"]))
+    A("  nothing and resolution is not the limit. The SENSOR is.")
+    A("")
 
-# motor straight across into the middle of J2
-for pin, col, lab in ((3, CA, "A2"), (4, CA, "A1"), (5, CB, "B1"), (6, CB, "B2")):
-    route([(MX + MW, j2[pin][1]), j2[pin]], col, None)
-    ax.text(MX + MW + 0.25, j2[pin][1] + 0.08, lab, fontsize=7.4, color=col,
-            zorder=7, bbox=dict(fc="white", ec="none", pad=0.6))
-ax.text(4.6, j2[4][1] + 0.26, "coil A", fontsize=7.6, color=CA, ha="center",
-        bbox=dict(fc="white", ec="none", pad=0.8), zorder=7)
-ax.text(4.6, j2[6][1] + 0.26, "coil B", fontsize=7.6, color=CB, ha="center",
-        bbox=dict(fc="white", ec="none", pad=0.8), zorder=7)
+    A("AND HERE IS THE HONEST PART")
+    peak = 69.6
+    A("  P1 peaks at about %.0f mmHg and full scale is %.0f. We are using"
+      % (peak, n["fs_mmhg"]))
+    A("  %.0f%% of the range, so the +-%.1f mmHg sits at +-%.0f%% of the"
+      % (100 * peak / n["fs_mmhg"], 0.025 * n["fs_mmhg"],
+         100 * 0.025 * n["fs_mmhg"] / peak))
+    A("  actual peak. That is a lot, and it is not fixable in firmware.")
+    A("")
+    A("  It matters much less than it looks, because of WHAT these are for:")
+    A("    the shape of the pulse   offset error is a constant and cancels,")
+    A("                             span error is one scale factor")
+    A("    P1 minus P2              both sensors see the same offset drift")
+    A("    is the piston working    a seal leak or trapped air is obvious")
+    A("    absolute mean pressure   NOT this. The manometer does that, and")
+    A("                             a ruler against a column of the loop's")
+    A("                             own fluid has no calibration to drift")
+    A("")
+    A("  Which is the division of labour the loop was already built around:")
+    A("  the manometer is the reference and P1 and P2 are the fast channel.")
+    A("  Zero them against the manometer at rest and the offset goes away.")
+    A("")
 
-# 100 uF across VM and GND, as close to the terminals as it will go
-cx = 5.55
-ax.plot([cx - 0.09, cx - 0.09], [j2[2][1] + 0.02, j2[1][1] - 0.02], color=PWR,
-        lw=2.2, zorder=8)
-ax.plot([cx + 0.07, cx + 0.07], [j2[2][1] + 0.02, j2[1][1] - 0.02], color=GND,
-        lw=2.2, zorder=8)
-ax.plot([cx - 0.09, 4.75], [j2[1][1], j2[1][1]], color=PWR, lw=1.5, zorder=6)
-ax.plot([cx + 0.07, 4.25], [j2[2][1], j2[2][1]], color=GND, lw=1.5, zorder=6)
-ax.text(cx, j2[1][1] + 0.30, "100 uF at the terminals", fontsize=7.2,
-        color=INK, ha="center", va="bottom", zorder=8,
-        bbox=dict(fc="white", ec="none", pad=0.8))
+    A("WIRING, per sensor")
+    A("  pin 1  Vout -> 10k -> ADC pin, 20k from there to GND, 0.47 uF too")
+    A("  pin 2  GND  -> Pico GND")
+    A("  pin 3  Vs   -> Pico VBUS, physical pin 40. 1 uF to GND at the part")
+    A("  P1 -> GP26 (ADC0), P2 -> GP27 (ADC1). GP2/3/4 are the stepper")
+    A("")
+    A("  VBUS IS ONLY LIVE ON USB. If the Pico is ever run from VSYS the")
+    A("  sensors go dark and read about 0 V, and 0 V is not zero pressure,")
+    A("  it is %.2f V below it. pressure.check() catches exactly this."
+      % n["v0"])
+    A("")
+    A("  Ground the sensors back to the Pico, not to the stepper supply.")
+    A("  One ADC count is %.1f mV and a stepper's ground bounce is larger"
+      % (n["lsb_v"] * 1000))
+    A("  than that, so a shared return path puts the motor in your signal.")
 
-ax.text(DX + DW / 2, DY - 0.28,
-        "LEAVE UNCONNECTED:  MS1, MS2  (both open = 1/8 microstep)\n"
-        "PDN/UART, CLK  (UART mode, not used here)",
-        fontsize=7.8, color=GREY, ha="center", va="top", linespacing=1.6)
 
-ax.text(0.4, 1.60,
-        "ORDER, every time:\n"
-        "motor wired first, then 12 V on, then USB.\n"
-        "Never pull a motor lead with 12 V live.\n"
-        "The coil dumps into the driver and kills it.",
-        fontsize=8.6, color=PWR, va="top", linespacing=1.7)
+def draw():
+    n = numbers()
+    fig = plt.figure(figsize=(13.5, 8.6), facecolor=PAPER)
+    ax = fig.add_axes((0.0, 0.0, 1.0, 1.0))
+    ax.set_xlim(0, 135)
+    ax.set_ylim(0, 86)
+    ax.axis("off")
 
-ax.text(0.4, 9.35,
-        "Pico pins are physical header positions, 1 at the USB end.\n"
-        "3, 4, 5 and 6 are four in a row, so GND, STEP, DIR and EN\n"
-        "are one short ribbon off the corner of the board.",
-        fontsize=7.8, color=GREY, ha="left", va="top", linespacing=1.6)
+    def txt(x, y, s, size=8.4, c=INK, ha="left", va="center", w=None, st=None):
+        ax.text(x, y, s, fontsize=size, color=c, ha=ha, va=va,
+                fontweight=w, style=st, family="DejaVu Sans")
 
-ax.set_xlim(0, 15.0)
-ax.set_ylim(0, 9.5)
-ax.axis("off")
-out = os.path.join(HERE, "wiring.png")
-fig.savefig(out, facecolor="white", bbox_inches="tight")
-print("wrote", out)
+    def wire(pts, c=INK, lw=1.5, ls="-"):
+        ax.plot([p[0] for p in pts], [p[1] for p in pts],
+                color=c, lw=lw, ls=ls, solid_capstyle="round", zorder=2)
+
+    def dot(x, y, c=INK, r=0.7):
+        ax.add_patch(plt.Circle((x, y), r, color=c, zorder=4))
+
+    txt(3, 82.5, "P1 and P2 to the Pico", 17, INK, w="bold")
+    txt(3, 78.4, "MPX5050GP.  The divider is not optional: the sensor swings to "
+                 "%.2f V and the ADC pin is %.1f V." % (n["vfs"], ADC_REF),
+        9.6, RED)
+
+    # ---------------------------------------------------------- the sensor
+    for idx, (name, ycen, col) in enumerate((("P1", 57.0, BLU),
+                                             ("P2", 26.0, GRN))):
+        sx, sy = 6.0, ycen - 9.0
+        ax.add_patch(FancyBboxPatch((sx, sy), 20, 18,
+                                    boxstyle="round,pad=0.5", fc="#f4f4f6",
+                                    ec=col, lw=1.8, zorder=3))
+        txt(sx + 10, sy + 15.0, name, 13, col, ha="center", w="bold")
+        txt(sx + 10, sy + 11.6, "MPX5050GP", 8.0, INK, ha="center")
+        # the notch, drawn where it really is
+        ax.add_patch(Rectangle((sx - 0.5, sy + 6.6), 1.0, 2.0, fc=RED,
+                               ec=RED, zorder=5))
+        txt(sx - 1.4, sy + 7.6, "notch", 7.2, RED, ha="right")
+        txt(sx + 10, sy + 4.2, "pin 1 is the one\nby the notch", 7.6, RED,
+            ha="center")
+        txt(sx + 10, sy + 0.6, "pins 4 5 6 = N/C", 7.2, "#777", ha="center")
+
+        p1y, p2y, p3y = sy + 13.0, sy + 9.0, sy + 5.0
+        for py, lab in ((p1y, "1 Vout"), (p2y, "2 GND"), (p3y, "3 Vs")):
+            txt(sx + 20.6, py, lab, 7.4, INK)
+
+        # ------------------------------------------------ Vout -> divider
+        jx = 62.0                       # the divider tap
+        wire([(sx + 20, p1y), (44, p1y)], col, 1.8)
+        # R top
+        ax.add_patch(Rectangle((44, p1y - 1.6), 9, 3.2, fc="#fff", ec=INK,
+                               lw=1.4, zorder=3))
+        txt(48.5, p1y + 0.1, "10k", 7.6, INK, ha="center")
+        wire([(53, p1y), (jx, p1y)], col, 1.8)
+        dot(jx, p1y, col)
+        wire([(jx, p1y), (88, p1y)], col, 1.8)
+
+        # R bottom
+        wire([(jx, p1y), (jx, p1y - 9)], INK, 1.4)
+        ax.add_patch(Rectangle((jx - 1.6, p1y - 13), 3.2, 4, fc="#fff",
+                               ec=INK, lw=1.4, zorder=3))
+        txt(jx + 2.6, p1y - 11, "20k", 7.6, INK)
+        wire([(jx, p1y - 13), (jx, p1y - 16)], INK, 1.4)
+
+        # the cap, in parallel
+        cx = jx + 11
+        wire([(jx, p1y - 4.5), (cx, p1y - 4.5), (cx, p1y - 9.4)], INK, 1.4)
+        wire([(cx - 2.4, p1y - 9.4), (cx + 2.4, p1y - 9.4)], INK, 1.6)
+        wire([(cx - 2.4, p1y - 10.9), (cx + 2.4, p1y - 10.9)], INK, 1.6)
+        txt(cx + 3.4, p1y - 10.1, "0.47 uF", 7.6, INK)
+        wire([(cx, p1y - 10.9), (cx, p1y - 16), (jx, p1y - 16)], INK, 1.4)
+        dot(jx, p1y - 4.5, INK, 0.55)
+
+        # ground symbol
+        gy = p1y - 16
+        for k, half in enumerate((3.0, 2.0, 1.0)):
+            wire([(jx - half, gy - k * 1.1), (jx + half, gy - k * 1.1)],
+                 INK, 1.4)
+
+        # GND and Vs runs
+        wire([(sx + 20, p2y), (34, p2y), (34, gy - 1.1)], INK, 1.4)
+        dot(34, gy - 1.1, INK, 0.55)
+        wire([(34, gy - 1.1), (jx - 3.0, gy - 1.1)], INK, 1.4)
+        wire([(sx + 20, p3y), (30, p3y), (30, 66.0), (88, 66.0)], RED, 1.8)
+
+        txt(70, p1y + 2.4, "%s to %s" % (name, "GP26" if idx == 0 else "GP27"),
+            8.6, col, w="bold")
+
+    # 1 uF decoupling note on the 5 V rail
+    txt(31, 63.4, "1 uF to GND at each sensor", 7.6, RED)
+
+    # ------------------------------------------------------------ the Pico
+    px, py, pw, ph = 88.0, 12.0, 20.0, 64.0
+    ax.add_patch(FancyBboxPatch((px, py), pw, ph, boxstyle="round,pad=0.6",
+                                fc="#f7f5ef", ec=INK, lw=2.0, zorder=3))
+    txt(px + pw / 2, 72.8, "Pico", 14, INK, ha="center", w="bold")
+    txt(px + pw / 2, 69.4, "ADC pin is 3.3 V", 8.2, RED, ha="center")
+
+    for yy, lab, c in ((66.0, "VBUS  pin 40", RED),
+                       (61.0, "GP26  ADC0", BLU),
+                       (30.0, "GP27  ADC1", GRN),
+                       (20.0, "GND", INK),
+                       (16.0, "GP2 3 4  stepper", "#888")):
+        txt(px + 1.6, yy, lab, 7.8, c)
+
+    # tie the grounds in
+    wire([(65.0, 14.0), (84, 14.0), (84, 20.0), (px, 20.0)], INK, 1.4)
+    wire([(65.0, 45.0), (84, 45.0), (84, 20.0)], INK, 1.4)
+    dot(84, 20.0, INK, 0.55)
+
+    # ------------------------------------------------------ the right rail
+    rx = 112.0
+    txt(rx, 73.0, "WHAT THESE ARE FOR", 9.4, INK, w="bold")
+    yy = 68.6
+    for lab, verdict, c in (
+            ("the shape of the pulse", "yes. offset cancels", GRN),
+            ("P1 minus P2", "yes. both drift together", GRN),
+            ("is the piston working", "yes. a leak shows", GRN),
+            ("absolute mean pressure", "NO. the manometer", RED)):
+        txt(rx, yy, lab, 8.0, INK)
+        txt(rx, yy - 3.0, verdict, 8.0, c, w="bold")
+        yy -= 7.6
+
+    yy = 36.0
+    txt(rx, yy, "THE NUMBERS", 9.4, INK, w="bold")
+    yy -= 4.6
+    for lab, val in (("full scale", "%.0f mmHg" % n["fs_mmhg"]),
+                     ("P1 peak", "70 mmHg"),
+                     ("range used", "19%"),
+                     ("sensor error", "+-%.0f mmHg" % (0.025 * n["fs_mmhg"])),
+                     ("one ADC count", "%.2f mmHg" % n["lsb_mmhg"]),
+                     ("filter", "%.0f Hz" % n["fc"]),
+                     ("sample at", "250 Hz")):
+        txt(rx, yy, lab, 7.8, "#555")
+        txt(rx + 18.5, yy, val, 7.8, INK, ha="right", w="bold")
+        yy -= 3.8
+
+    txt(3, 7.6, "VBUS is live only on USB. If the Pico ever runs from VSYS the "
+                "sensors go dark and read about 0 V,", 8.6, RED)
+    txt(3, 4.6, "and 0 V is not zero pressure, it is %.2f V below it. "
+                "pressure.check() is written to catch exactly that."
+        % n["v0"], 8.6, RED)
+    txt(3, 1.6, "flow/wiring.py  and  flow/pico/pressure.py", 7.4, "#888")
+
+    fig.savefig(OUT, dpi=150, facecolor=PAPER)
+    plt.close(fig)
+    print("\nwrote %s" % OUT)
+
+
+if __name__ == "__main__":
+    report()
+    draw()

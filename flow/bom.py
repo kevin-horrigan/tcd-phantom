@@ -150,7 +150,7 @@ BOM = [
      "which is peak, trough and mean, and not good enough for the shape of "
      "systole. Use these for bring-up and the compliance sweep"),
     ("INSTRUMENTS", 2, "MPX5050GP", "0-50 kPa gauge, single port, ~1 ms",
-     "CHECK",
+     "HAVE",
      "P1 and P2, and the manometer does NOT replace them: it is throttled "
      "to 0.05 Hz so it cannot follow the pulse, which is what makes it a "
      "clean mean. P2 measures the waveform reaching the block, which is the "
@@ -190,6 +190,22 @@ BOM = [
             "fluid. The transducer's "
             "total error band is 1.5 percent of 5 psi, which is 4 mmHg, so "
             "the tube is the absolute reference and the sensor is the shape"),
+    # The interface between the sensors and the Pico. Six passives, and
+    # without the first two the Pico's 3.3 V ADC pin sees 4.70 V.
+    ("INSTRUMENTS", 2, "resistor, 10k, 1%", "0.25 W, through hole", "BUY",
+     "upper half of the divider on each sensor output. See wiring.py"),
+    ("INSTRUMENTS", 2, "resistor, 20k, 1%", "0.25 W, through hole", "BUY",
+     "lower half. 10k over 20k drops the sensor's 4.70 V full scale to "
+     "3.13 V, which fits the Pico's 3.3 V ADC with room to spare and loads "
+     "the sensor at only 0.16 mA"),
+    ("INSTRUMENTS", 2, "capacitor, 0.47 uF film", "50 V", "BUY",
+     "across the 20k. With the divider's 6.7k source this is a 51 Hz "
+     "low-pass, which is the anti-alias filter for sampling at 250 Hz. The "
+     "sensor answers in 1 ms, so without it a kilohertz of noise folds "
+     "straight into the band we care about"),
+    ("INSTRUMENTS", 2, "capacitor, 1 uF ceramic", "16 V", "BUY",
+     "supply decoupling, mounted at the sensor's own pins 2 and 3, per the "
+     "datasheet's application circuit"),
     ("INSTRUMENTS", 2, "blunt luer needle, 16 gauge, 25 mm",
      "the restriction in front of the manometer", "BUY",
      "PART 3 OF 3 of the manometer, not an alternative to it. Luer, so it "
