@@ -89,14 +89,18 @@ BOM = [
             "at 3.18 mm is the commodity equivalent and fits a 1/8 in barb"),
 
     ("FLUID INTERFACE", 1, "60 mL syringe, for the PLENUM",
-     "vertical, tip down, plunger in and STOPPED", "BUY",
+     "stands tip down and OPEN to the loop, plunger CLAMPED", "BUY",
      "rigid and clear and graduated, so the air volume is both the setting "
      "and the reading. Its own wall is 0.4 percent of the air's compliance, "
      "which is the margin you want. Build for 10 to 50 mL of trapped air "
      "and start at 20. A soft bulb would be 265 percent and the knob would "
      "stop working. The luer tip meets the barb-to-luer adapter already "
      "listed. At 1.8 psi the plunger sees about 7 N, the same order as its "
-     "own breakout friction, so block it or it creeps. See plenum.py"),
+     "own breakout friction, so clamp the rod or it creeps. Nothing is "
+     "plugged: the tip stays open, fluid rises into the barrel, air sits "
+     "above it, and clamping stops the plunger SLIDING. Air dissolves into "
+     "the fluid over hours, so re-read the graduations each sweep point. "
+     "See plenum.py"),
 
     ("INSTRUMENTS", 2, "the single-inlet modules already on the shelf",
      "gauge, check rate / range / media before trusting", "CHECK",

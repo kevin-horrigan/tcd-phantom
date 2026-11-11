@@ -117,7 +117,20 @@ def main():
     A("  the plunger sees about %.0f N, which is the same order as its own"
       % (H.RHO * H.G * H.TANK_MM * 1e-3 * math.pi * (26.5e-3 / 2) ** 2))
     A("  breakout friction, so it WILL creep over a long run if it is not")
-    A("  stopped. A block behind the thumb rest is enough.")
+    A("  held. A clamp on the rod, or a collar behind the thumb rest.")
+    A("")
+    A("  NOTHING IS PLUGGED. The syringe stands tip DOWN and OPEN to the")
+    A("  loop: fluid rises into the barrel from the tip, air sits above it,")
+    A("  and the plunger seals the top. Clamping the plunger stops it")
+    A("  SLIDING, it does not close the fluid path. If the tip were blocked")
+    A("  the plenum would do nothing at all, because nothing could get in")
+    A("  and out of it, and that is the whole mechanism.")
+    A("")
+    A("  ONE THING TO WATCH over a long run: air dissolves into the fluid,")
+    A("  so the level creeps up and the air volume quietly shrinks, which")
+    A("  moves the compliance mid-experiment. The graduations are how you")
+    A("  catch it, and the plunger is how you put it back without opening")
+    A("  anything. Read it at the start and end of every sweep point."),
     A("")
 
     # ------------------------------------------------------------- sizing
@@ -248,7 +261,7 @@ def main():
     fig.suptitle("The plenum", fontsize=12.5, y=0.99)
     fig.text(0.5, 0.012,
              "Build for 10 to 50 mL of air and start at 20 mL. A 60 mL "
-             "syringe, tip down, plunger in and stopped, covers it.",
+             "syringe standing tip down, plunger in and clamped, covers it.",
              fontsize=9, color="#555", ha="center")
     fig.tight_layout(rect=(0, 0.04, 1, 0.94))
     fig.savefig(os.path.join(HERE, "plenum.png"), facecolor="white")

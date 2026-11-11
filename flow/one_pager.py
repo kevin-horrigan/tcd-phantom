@@ -324,11 +324,12 @@ def main():
     fig.text(0.700, 0.212, "THE PLENUM IS THE EXPERIMENT", fontsize=12.5,
              color=HOT, fontweight="bold")
     fig.text(0.700, 0.190,
-             "A 60 mL syringe, tip down, plunger in and\n"
-             "blocked so it cannot creep. Build for 10 to 50\n"
-             "mL of air, start at 20, where Greaby landed.\n"
-             "Sweeping it against R2 is the deliverable:\n"
-             "with no air the loop is too peaky, PI 1.55.",
+             "A 60 mL syringe standing tip down, open to the\n"
+             "loop, with air trapped above the fluid. The\n"
+             "plunger stays in and gets CLAMPED so it cannot\n"
+             "slide. Move it to set the air: 10 to 50 mL, start\n"
+             "at 20, where Greaby landed. Sweeping it against\n"
+             "R2 is the deliverable.",
              fontsize=10.5, color=HOT, va="top", linespacing=1.5)
 
     fig.text(0.5, 0.044,
