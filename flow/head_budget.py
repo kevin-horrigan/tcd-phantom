@@ -51,7 +51,24 @@ Q_PEAK = 500.0           # mL/min at peak systole
 # position again: "up" is between the jar and the piston junction, "shape"
 # carries the pulse to the block, "lumen" is Group 1, "down" is after it.
 TANK_MM = 1200.0         # constant-head jar above the phantom centreline
-R1_BORE = 2.0            # narrow tubing. See r1_length() for why not 1.0
+# 4.0 mm, which is the bore of the 1/4 in OD tube in the RO kit. That kit was
+# bought for its 3/8 in tube, which is the 6.35 mm trunk, and the 1/4 in reel
+# in the same box turns out to be a better R1 than the 2.0 mm this file
+# specified before it existed:
+#
+#   trim resolution   2.9 m of it instead of 182 mm, so 29 mm of length per
+#                     1 % of head instead of 1.8. Sixteen times easier to cut
+#                     to a number against the manometer.
+#   AC blocking       wL/R is w*rho*d^2/(32*mu), which does not depend on
+#                     length, so a wider bore carries more inertance per unit
+#                     of resistance. At 1 Hz this one blocks 28 % harder than
+#                     its DC resistance alone, against 2 % for the 2.0 mm.
+#                     Better pulse rejection for the same head spent.
+#
+# It costs 37 mL of extra fluid sitting in the coil, and bench space for a
+# 2.9 m coil. Both cheap. Coiling raises the resistance a few percent through
+# Dean flow at Re 335, which is inside the trimming anyway.
+R1_BORE = 4.0
 FORWARD_FRAC = 0.65      # share of the piston's output that goes toward the block
 
 SEGMENTS = [

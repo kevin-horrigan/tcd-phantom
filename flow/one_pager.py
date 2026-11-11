@@ -101,7 +101,7 @@ def main():
     # the number on the bag means inside diameter in one aisle and outside
     # diameter in the other.
     QTR = "6.35 mm bore\n1/4 barb or 3/8 push"
-    SML = "2 mm\nbore"
+    SML = "4 mm bore\n1/4 in push"
     LUM = "3 mm\n1/8 in barb"
 
     X_JAR, X_DROP = 0.55, 1.05
@@ -138,8 +138,8 @@ def main():
     lab((X_R1A + X_R1B) / 2, 0.78, "R1", HOT, 12, weight="bold")
     bore((X_R1A + X_R1B) / 2, 0.38, SML, HOT)
     lab((X_R1A + X_R1B) / 2 - 0.12, -0.55,
-        "about %.0f mm of\n2 mm bore tubing\ncut long, trim to suit"
-        % (round(r1_L / 10.0) * 10), HOT, 9.5, va="top")
+        "about %.1f m of the\nkit's 1/4 inch tube\ncoiled. Cut long, trim"
+        % (round(r1_L / 100.0) / 10.0), HOT, 9.5, va="top")
 
     # ------------------------------------------------------- piston at P1
     pipe(X_R1B, X_P1)
@@ -278,12 +278,13 @@ def main():
     # and "3 mm" as the same thing.
     panel(0.030, "WHAT TO BUY", [
         ("THREE BORES, and only three:\n"
-         "6.35 mm    the trunk, most of the loop\n"
-         "3.0 mm     the last 150 mm into the block\n"
-         "2.0 mm     R1, and nothing else", INK),
+         "6.35 mm    the trunk. 3/8 in push-fit tube\n"
+         "4.0 mm     R1 only. 1/4 in push-fit tube\n"
+         "3.0 mm     the last 150 mm into the block", INK),
         ("Barbed tubing is sold by INSIDE diameter, push-fit\n"
-         "by OUTSIDE. 6.35 mm bore is 1/4 in BARBED or 3/8 in\n"
-         "PUSH-FIT. 1/4 in push-fit is 4 mm and will NOT run.", HOT),
+         "by OUTSIDE. The 6.35 mm trunk is 3/8 in PUSH-FIT,\n"
+         "NOT 1/4. A 1/4 in push-fit trunk is 4 mm and the\n"
+         "loop will not run on it. That reel is R1's.", HOT),
         ("Push-fit is the better buy: rigid, hand-assembled\n"
          "for the sweep, LLDPE 5x stiffer than braided PVC.\n"
          "Never silicone, it soaks up the heartbeat.", HOT),

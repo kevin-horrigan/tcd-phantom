@@ -88,6 +88,17 @@ BOM = [
      "BUY", "the 150 mm settling run into the block, plus spares. 1/8 in ID "
             "at 3.18 mm is the commodity equivalent and fits a 1/8 in barb"),
 
+    ("FLUID INTERFACE", 1, "RO push-fit kit, 1/4 + 3/8 in",
+     "25 fittings, 30 ft of each tube, NSF, about 36 USD", "BUY",
+     "covers the whole loop in one box, and the two reels do two different "
+     "jobs. The 3/8 in OD tube is a 6.35 mm BORE and is the trunk. The "
+     "1/4 in OD tube is a 4 mm bore and is R1, about 2.9 m of it coiled. "
+     "Do NOT run the trunk in the 1/4 in: at 4 mm the plumbing eats more "
+     "than the jar provides and R2 goes negative. Push-fit sizes are "
+     "OUTSIDE diameter, barbed tubing is INSIDE, which is the whole trap. "
+     "The ball valves in the kit are isolation valves, not throttles, so "
+     "R2 is still a screw clamp or needle valve"),
+
     ("FLUID INTERFACE", 1, "60 mL syringe, for the PLENUM",
      "stands tip down and OPEN to the loop, plunger CLAMPED", "HAVE",
      "rigid and clear and graduated, so the air volume is both the setting "
