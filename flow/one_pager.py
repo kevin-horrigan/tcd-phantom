@@ -227,7 +227,8 @@ def main():
     # One shared top edge and one shared line pitch, so the three columns
     # read as a row rather than three things that happen to be near each
     # other. The pitch is counted in lines, not in entries.
-    PANEL_TOP, LINE = 0.435, 0.0268
+    PANEL_TOP, LINE, GAP = 0.435, 0.0255, 0.006
+    _ends = []
 
     def panel(x0, title, lines, col=INK, top=PANEL_TOP):
         fig.text(x0, top, title, fontsize=12.5, color=col, fontweight="bold")
@@ -235,20 +236,26 @@ def main():
         for t, c in lines:
             fig.text(x0, y, t, fontsize=10.5, color=c, linespacing=1.5,
                      va="top")
-            y -= LINE * (1 + t.count("\n")) + 0.008
+            y -= LINE * (1 + t.count("\n")) + GAP
+        _ends.append(y)
         return y
 
+    # Every imperial size carries its millimetres. Three bores on one page,
+    # two of them named in inches, is exactly the setup for reading "1/4 in"
+    # and "3 mm" as the same thing.
     panel(0.030, "WHAT TO BUY", [
-        ("1/4 inch tubing for everything but two places.", INK),
+        ("THREE BORES, and only three:\n"
+         "1/4 inch = 6.35 mm    the trunk, most of the loop\n"
+         "1/8 inch = 3.18 mm    the last 150 mm into the block\n"
+         "2 mm                  R1, and nothing else", INK),
+        ("1/4 inch is NOT 3 mm. It is more than twice that.", HOT),
         ("Braided PVC or Tygon, NOT silicone. Soft tube\n"
          "soaks up the heartbeat instead of passing it on.", HOT),
-        ("2 mm bore tubing for R1, about 180 mm, trimmed.", INK),
-        ("3 mm tubing for the last 150 mm into the block.\n"
-         "A 1/8 inch barb IS a 3 mm barb.", INK),
-        ("A screw clamp for R2.", INK),
-        ("Two pressure sensors, single inlet, 0 to 40 kPa.\n"
-         "The ones already on the shelf will do.", INK),
-        ("A beaker and a kitchen scale, for the flow rate.", INK),
+        ("Barbs are named for the TUBING they fit. A 1/8\n"
+         "inch barb takes 3 mm tubing, and that 0.18 mm\n"
+         "of stretch is what seals it.", INK),
+        ("A screw clamp for R2. Two single-inlet pressure\n"
+         "sensors, 0 to 40 kPa. A beaker and a scale.", INK),
     ])
 
     panel(0.385, "WHERE THE PUSH GOES", [
@@ -307,6 +314,14 @@ def main():
              "The pump discharges below the surface, or it whips air into "
              "the fluid and air ruins the Doppler.",
              fontsize=10, color=MUTE, ha="center")
+
+    # A column that outgrows the page should say so rather than run off it.
+    # Adding the bore conversions pushed the buy list past the footer and
+    # nothing complained, which is how a drawing ends up with a line nobody
+    # can read.
+    if min(_ends) < 0.050:
+        raise SystemExit("a bottom column ran down to %.3f and the footer is "
+                         "at 0.030. Cut a line or two." % min(_ends))
 
     out = os.path.join(HERE, "loop-one-pager.png")
     fig.savefig(out, facecolor="white")
