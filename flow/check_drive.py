@@ -601,3 +601,23 @@ check("the mixed-material joints all run the forgiving way",
       "saddle rather than pressed, and the carriage rides steel rods, so "
       "nothing presses ABS into PLA"
       % (S.FRAME_AS_BUILT["printed"].split(",")[0], S.MATERIAL))
+
+
+# --------------------------------------------------------------- the rods
+# Nothing retains the rods but friction in the printed bores. The bore runs
+# clean through both the motor plate and the rib, so there is no shoulder,
+# no circlip and nowhere for a shaft collar: the rib's back face is 3 mm
+# from the saddle and a collar is about ten.
+_grip = S.WALL_T + S.RIB_T
+check("the rods have enough printed bore to grip",
+      _grip >= 2.0 * S.ROD_D,
+      "%.0f mm of grip on an %.0f mm rod, %.0f in the motor plate and %.0f "
+      "in the rib. The bore is line-to-line, so the coupon decides whether "
+      "that is a press or a slip" % (_grip, S.ROD_D, S.WALL_T, S.RIB_T))
+
+# One direction is blocked by the motor itself, which is worth knowing
+# because it halves the problem: a rod can only walk toward the syringe.
+check("a walking rod can only go one way",
+      S.X_MOTOR_FACE <= 0.0 + 1e-9,
+      "the motor bolts to the plate's front face at X=0, so forward travel "
+      "is stopped by the motor. Only the rib direction is open")

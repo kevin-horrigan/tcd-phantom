@@ -37,7 +37,14 @@ BOM = [
      "BUY", "8 mm PER REV, not 2 mm. T8x2 is far more common and wrong here"),
     ("MOTION", 1, "anti-backlash T8 nut", "spring preloaded, flanged",
      "BUY", "a plain nut gives 0.2 mm lost motion, 2 to 5% of the beat"),
-    ("MOTION", 2, "8 mm smooth rod", "hardened, %.0f mm" % ROD_L, "BUY", ""),
+    ("MOTION", 2, "8 mm smooth rod", "hardened, %.0f mm" % ROD_L, "BUY",
+     "buy 300 mm and cut both from it. NOT with a hacksaw: the case is "
+     "60 HRC against a 64 HRC blade and it will not cut, which reads as "
+     "having been sent the wrong rod. Abrasive chop saw, angle grinder or "
+     "rotary tool. CHAMFER BOTH ENDS afterwards or a square burr scores the "
+     "LM8UU ball tracks going in. Nothing retains these but the press fit, "
+     "so the coupon's rod bore is what says whether that is enough. See "
+     "rods.py"),
     ("MOTION", 2, "LM8UU linear bearing", "15 mm OD x 24 mm", "BUY", ""),
     ("MOTION", 1, "608 bearing", "8 x 22 x 7, skate bearing", "BUY",
      "takes the screw's far end in the rib"),
