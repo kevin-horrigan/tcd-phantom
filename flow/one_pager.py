@@ -281,10 +281,9 @@ def main():
          "6.35 mm    the trunk. 3/8 in push-fit tube\n"
          "4.0 mm     R1 only. 1/4 in push-fit tube\n"
          "3.0 mm     the last 150 mm into the block", INK),
-        ("Barbed tubing is sold by INSIDE diameter, push-fit\n"
-         "by OUTSIDE. The 6.35 mm trunk is 3/8 in PUSH-FIT,\n"
-         "NOT 1/4. A 1/4 in push-fit trunk is 4 mm and the\n"
-         "loop will not run on it. That reel is R1's.", HOT),
+        ("Barbed tube is sold by INSIDE diameter, push-fit by\n"
+         "OUTSIDE. The 6.35 mm trunk is 3/8 in PUSH-FIT, not\n"
+         "1/4. The 1/4 in reel is 4 mm, and that one is R1.", HOT),
         ("Push-fit is the better buy: rigid, hand-assembled\n"
          "for the sweep, LLDPE 5x stiffer than braided PVC.\n"
          "Never silicone, it soaks up the heartbeat.", HOT),
