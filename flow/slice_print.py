@@ -137,18 +137,39 @@ def main():
     ovr = os.path.join(OUT, "override_tcd06.json")
     json.dump(o, open(ovr, "w"), indent=1)
 
+    # --bed and --nozzle both patch the FILAMENT, because that is where the
+    # K1C's START_PRINT macro reads them from at slice time. A process
+    # override is ignored silently, and so is editing the gcode afterwards.
+    # --nozzle was added for ABS: bed alone gets you a 100 C plate under a
+    # 215 C extrusion, which is PLA temperature on ABS filament and produces
+    # a part that delaminates rather than warps.
     filament = FILAMENT_SRC
-    if "--bed" in sys.argv:
-        T = int(arg("--bed"))
+    if "--bed" in sys.argv or "--nozzle" in sys.argv:
         f = json.load(open(FILAMENT_SRC, encoding="utf-8"))
-        for k in list(f):
-            if k.endswith("_plate_temp"):
-                f[k] = [str(T)]
-            if k.endswith("_plate_temp_initial_layer"):
-                f[k] = [str(T + 2)]
-        filament = os.path.join(OUT, "filament_pla_pro_bed%d.json" % T)
+        tag = ""
+        if "--bed" in sys.argv:
+            T = int(arg("--bed"))
+            for k in list(f):
+                if k.endswith("_plate_temp"):
+                    f[k] = [str(T)]
+                if k.endswith("_plate_temp_initial_layer"):
+                    f[k] = [str(T + 2)]
+            tag += "_bed%d" % T
+        if "--nozzle" in sys.argv:
+            N = int(arg("--nozzle"))
+            f["nozzle_temperature"] = [str(N)]
+            f["nozzle_temperature_initial_layer"] = [str(N + 5)]
+            # ABS wants the part fan off or nearly so, or layers peel. These
+            # live in the filament profile too.
+            for k, v in (("fan_max_speed", "20"), ("fan_min_speed", "0"),
+                         ("overhang_fan_speed", "30"),
+                         ("close_fan_the_first_x_layers", "4")):
+                if k in f:
+                    f[k] = [v]
+            tag += "_noz%d" % N
+        filament = os.path.join(OUT, "filament%s.json" % tag)
         json.dump(f, open(filament, "w"), indent=1)
-        name += "_bed%d" % T
+        name += tag
 
     out3mf = os.path.join(OUT, "%s.3mf" % stem)
     gcode = os.path.join(OUT, name + ".gcode")

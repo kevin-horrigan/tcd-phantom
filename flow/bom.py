@@ -150,14 +150,19 @@ BOM = [
      "media with food-grade gel: an 'N' there is dry gases only and would "
      "be destroyed. Barbless is ABP2DVNT005PG2A3XX. ~200 Hz, 3.3 V, and "
      "both land on I2C 0x28 so they need the Pico's two buses"),
-    ("INSTRUMENTS", 1, "clear vinyl tube, 6.35 mm bore, 1.3 m, + a metre stick",
+    ("INSTRUMENTS", 1, "clear vinyl tube, 6.35 mm bore, 0.7 m, + a metre stick",
      "the MANOMETER, teed into the trunk at the piston junction",
      "BUY", "a tube, open at the top, with loop fluid standing in it. Its "
             "HEIGHT is the pressure. Stands at 405 mm when R1 is right, and "
             "1 - 405/1200 is the share of the pulse going forward, so it "
             "reads the design parameter directly. Tee it into the TRUNK, "
-            "never the 3 mm run. 1.3 m TALL: if R2 is ever shut the flow stops, "
-            "there is no loss anywhere, and it rises to the jar's own 1200 mm. "
+            "never the 3 mm run. 700 mm TALL with its TOP RETURNED TO THE "
+            "RESERVOIR. The sweep only ever puts it between 275 and 535 mm; "
+            "the 1200 mm case is a shut R2 with no flow, and with the "
+            "overflow plumbed back that spills harmlessly and pins the "
+            "reading at 700, which tells you at once that something is "
+            "wrong. A wider tube does NOT make it shorter: h = p/(rho g) has "
+            "no diameter in it. "
             "Soft tube is fine HERE and nowhere else, because it carries no "
             "flow and sits behind the needle. Zero the ruler at the "
             "RESERVOIR's surface. reads the MEAN to about a millimetre of "
