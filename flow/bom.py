@@ -89,7 +89,7 @@ BOM = [
             "at 3.18 mm is the commodity equivalent and fits a 1/8 in barb"),
 
     ("FLUID INTERFACE", 1, "60 mL syringe, for the PLENUM",
-     "stands tip down and OPEN to the loop, plunger CLAMPED", "BUY",
+     "stands tip down and OPEN to the loop, plunger CLAMPED", "HAVE",
      "rigid and clear and graduated, so the air volume is both the setting "
      "and the reading. Its own wall is 0.4 percent of the air's compliance, "
      "which is the margin you want. Build for 10 to 50 mL of trapped air "
@@ -100,7 +100,9 @@ BOM = [
      "plugged: the tip stays open, fluid rises into the barrel, air sits "
      "above it, and clamping stops the plunger SLIDING. Air dissolves into "
      "the fluid over hours, so re-read the graduations each sweep point. "
-     "See plenum.py"),
+     "See plenum.py. BOUGHT 2026-11-10. Still to measure: barrel bore, "
+     "plunger cross for the lock, usable stroke. None of them change the "
+     "compliance, which depends on air volume alone"),
 
     ("INSTRUMENTS", 2, "the single-inlet modules already on the shelf",
      "gauge, check rate / range / media before trusting", "CHECK",

@@ -45,6 +45,20 @@ EJECT_S = 0.40                  # the piston's ejection takes this long
 # Candidate vessels. "rigid" is the wall's own compliance as a fraction of
 # the air's, at 20 mL of air, so smaller is better and anything under a
 # percent is irrelevant.
+# The one actually bought, 2026-11-10. Same discipline as the motor table and
+# the nut table: a field that nobody has put calipers on stays None, so it
+# cannot be quoted back later as though it were measured. Nominal syringe
+# dimensions are close enough to reason with and not close enough to cut a
+# part against.
+PLENUM_SYR = dict(
+    nominal_ml=60.0,
+    bore_mm=None,          # across the barrel bore
+    rod_mm=None,           # across the plunger cross, for the lock
+    stroke_mm=None,        # flange face to full insertion
+    note="bought 2026-11-10",
+)
+NOMINAL_BORE = 26.5        # typical 60 mL barrel, for reasoning only
+
 VESSELS = [
     ("60 mL syringe, plunger in", 26.5, 1.8, 2.4e9, True,
      "graduated, luer at the tip, and the plunger SETS the volume"),
@@ -92,6 +106,46 @@ def wall_fraction(bore_mm, wall_mm, e_pa, air_ml=20.0):
 def main():
     A = print
     r = r_downstream()
+
+    unknown = sorted(k for k, v in PLENUM_SYR.items()
+                     if v is None)
+    A("THE ONE IN HAND  (%s)" % PLENUM_SYR["note"])
+    A("  %.0f mL syringe, bought. Three numbers to read off it, and what each"
+      % PLENUM_SYR["nominal_ml"])
+    A("  one actually changes:")
+    A("")
+    A("    barrel bore      how far the level moves per mL, so whether the")
+    A("                     breathing is visible, and the force on the")
+    A("                     plunger, so whether it creeps")
+    A("    plunger cross    the only number the printed lock needs")
+    A("    usable stroke    whether 50 mL of air still fits once the fluid")
+    A("                     has risen into the barrel")
+    A("")
+    A("  AND THE POINT WORTH NOTICING: the compliance, which is the only")
+    A("  thing the experiment is actually setting, depends on the AIR VOLUME")
+    A("  and nothing else. Not the bore, not the stroke, not the shape of the")
+    A("  barrel. So the setting that matters is already safe, and these three")
+    A("  only decide how pleasant the thing is to use. That is a rare and")
+    A("  comfortable position to be in on this bench.")
+    A("")
+    if unknown:
+        A("  still unmeasured: %s" % ", ".join(unknown))
+        f = (H.RHO * H.G * H.TANK_MM * 1e-3
+             * math.pi * (NOMINAL_BORE * 1e-3 / 2) ** 2)
+        A("  Reasoning meanwhile on a nominal %.1f mm bore: the plunger sees"
+          % NOMINAL_BORE)
+        A("  about %.0f N at full jar pressure, the level moves %.1f mm per mL,"
+          % (f, 1e3 / (math.pi * (NOMINAL_BORE / 2) ** 2)))
+        A("  and connecting it to a %.0f mmHg line compresses the trapped air"
+          % 30.0)
+        A("  by %.1f percent, so set it to about %.0f mL at the bench to land"
+          % (100.0 * (30.0 * MMHG) / P_ATM,
+             20.0 * (1.0 + (30.0 * MMHG) / P_ATM)))
+        A("  on 20 mL running. None of that is a part dimension and none of")
+        A("  it gets cut against.")
+    else:
+        A("  all measured.")
+    A("")
 
     A("WHAT IT IS MADE OF")
     A("  Rigid and clear, standing upright. Wall stiffness is the whole")
