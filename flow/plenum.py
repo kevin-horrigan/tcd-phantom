@@ -133,6 +133,54 @@ def main():
     A("  anything. Read it at the start and end of every sweep point."),
     A("")
 
+    # ------------------------------------------------- why it works at all
+    A("HOW FLUID GETS IN WHEN THERE IS ALREADY AIR IN THERE")
+    A("  Because the AIR is the compressible one. The liquid is not. That is")
+    A("  the wrong way round from how it feels, and it is the entire")
+    A("  mechanism, so it is worth a number:")
+    A("")
+    A("  %-28s %14s %12s" % ("squeeze 1 % out of...", "needs", "psi"))
+    for nm, dp in (("air at 1 atm", 1.4 * P_ATM * 0.01),
+                   ("150 mm of 1/4 in silicone", 4.75e-8 / 1.257e-11),
+                   ("150 mm of 1/4 in braided PVC", 4.75e-8 / 1.34e-12),
+                   ("the blood-mimicking fluid", 2.2e9 * 0.01)):
+        A("  %-28s %11.0f Pa %12.2f" % (nm, dp, dp / H.PSI))
+    A("")
+    A("  Air gives way about %.0f thousand times more easily than the fluid"
+      % (2.2e9 * 0.01 / (1.4 * P_ATM * 0.01) / 1000.0))
+    A("  does. So when the piston pushes, nothing happens to the liquid at")
+    A("  all: the pressure rises, the trapped air shortens, and fluid climbs")
+    A("  into the barrel to fill the space the air just gave up. Between")
+    A("  beats the air springs back and pushes that fluid out again. The")
+    A("  plenum BREATHES. The air is the spring and the liquid column is")
+    A("  just the face that pushes on it.")
+    A("")
+    A("  How far it breathes, at 20 mL of air and a %.0f mmHg pulse:" % 39.0)
+    dv = 20e-6 * (39.0 * MMHG) / (1.4 * P_ATM)
+    for nm, bore in (("60 mL syringe", 26.5), ("25 mL pipette", 10.0)):
+        a = math.pi * (bore * 1e-3 / 2) ** 2
+        A("    %-16s %.2f mL, which is %.1f mm of level in a %.0f mm bore"
+          % (nm, dv * 1e6, dv / a * 1e3, bore))
+    A("  Same compliance either way, because that depends only on the air")
+    A("  VOLUME. The narrow one just shows you the breathing, which is worth")
+    A("  having on a rig nobody has run before.")
+    A("")
+    A("  And the silicone line in that table is the other warning made")
+    A("  concrete: silicone tubing is only about %.0fx stiffer than the air"
+      % ((4.75e-8 / 1.257e-11) / (1.4 * P_ATM * 0.01)))
+    A("  itself. Plumb the loop in it and you have not avoided a plenum, you")
+    A("  have built a second one, spread along the bench where you cannot")
+    A("  see it, measure it or turn it down. Braided PVC is %.0fx."
+      % ((4.75e-8 / 1.34e-12) / (1.4 * P_ATM * 0.01)))
+    A("")
+    A("  The bicycle pump is the whole thing in one image. Finger over the")
+    A("  outlet, push, and the handle moves: that is the air compressing.")
+    A("  Fill the barrel with water instead, finger over the outlet, push,")
+    A("  and nothing moves at all. Greaby's 'no air gives short high spikes'")
+    A("  IS the second case: with nothing to give, the piston's half")
+    A("  millilitre goes straight into pressure.")
+    A("")
+
     # ------------------------------------------------------------- sizing
     A("HOW BIG")
     A("  The plenum fills during systole and empties through everything")
@@ -215,10 +263,31 @@ def main():
     A("  drop and put THAT number in the budget.")
 
     # ------------------------------------------------------------- figure
-    fig, ax = plt.subplots(1, 2, figsize=(12.6, 5.0), dpi=170)
+    fig, ax = plt.subplots(1, 3, figsize=(17.4, 5.0), dpi=165)
     fig.patch.set_facecolor("white")
 
-    a0 = ax[0]
+    # The concept panel reads first, because "air is the compressible one"
+    # is the thing the rest of the drawing rests on.
+    a2 = ax[0]
+    items = [("air at 1 atm", 1.4 * P_ATM * 0.01, "#4a8f3c"),
+             ("1/4 in silicone", 4.75e-8 / 1.257e-11, "#b4462e"),
+             ("1/4 in braided PVC", 4.75e-8 / 1.34e-12, "#2e6fb4"),
+             ("the fluid itself", 2.2e9 * 0.01, "#3c3c3c")]
+    a2.barh(range(len(items))[::-1], [i[1] / H.PSI for i in items],
+            color=[i[2] for i in items], height=0.58)
+    a2.set_yticks(range(len(items))[::-1])
+    a2.set_yticklabels([i[0] for i in items], fontsize=9.5)
+    a2.set_xscale("log")
+    for k, (nm, dp, c) in enumerate(items):
+        a2.text(dp / H.PSI * 1.5, len(items) - 1 - k, "%.2f psi" % (dp / H.PSI)
+                if dp / H.PSI < 100 else "%.0f psi" % (dp / H.PSI),
+                va="center", fontsize=9, color=c, fontweight="semibold")
+    a2.set_xlim(0.08, 9e5)
+    a2.set_xlabel("pressure needed to squeeze 1 % of the volume out")
+    a2.set_title("Why fluid can get in at all:\nthe AIR is the soft one, "
+                 "not the liquid", fontsize=10.5)
+
+    a0 = ax[1]
     vols = np.linspace(2, 70, 300)
     a0.plot(vols, vols * 1e-6 / P_ATM * r, color="#b4462e", lw=2.2,
             label="isothermal")
@@ -239,7 +308,7 @@ def main():
                  fontsize=10.5)
     a0.legend(fontsize=8.5, frameon=False, loc="lower right")
 
-    a1 = ax[1]
+    a1 = ax[2]
     names = [v[0].split(",")[0] for v in VESSELS]
     fr = [100.0 * wall_fraction(v[1], v[2], v[3]) for v in VESSELS]
     cols = ["#2e6fb4" if v[4] else "#b4462e" for v in VESSELS]
@@ -258,7 +327,8 @@ def main():
         a.grid(alpha=0.25, lw=0.6)
         for sp in ("top", "right"):
             a.spines[sp].set_visible(False)
-    fig.suptitle("The plenum", fontsize=12.5, y=0.99)
+    fig.suptitle("The plenum: an air spring with a liquid face",
+                 fontsize=13, y=0.99)
     fig.text(0.5, 0.012,
              "Build for 10 to 50 mL of air and start at 20 mL. A 60 mL "
              "syringe standing tip down, plunger in and clamped, covers it.",
