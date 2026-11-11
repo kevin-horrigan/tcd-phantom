@@ -193,9 +193,23 @@ MATERIALS = {
     "PLA": dict(fixed=0.24, per_mm=0.0, rho=1.24, nozzle=215, bed=60,
                 note="MEASURED on fit coupon rev 2, 0.6 nozzle, 2026-11-09. "
                      "The frame, and everything printed before 2026-11-11"),
-    "ABS": dict(fixed=None, per_mm=None, rho=1.04, nozzle=250, bed=100,
-                note="UNMEASURED. Reprint fit_coupon in ABS and measure the "
-                     "608 pocket and BOTH rod bores before anything fitted"),
+    # MEASURED on the ABS coupon, 2026-11-11: an 8.24 drawn bore came out
+    # 8.00 and a 22.20 drawn pocket came out 22.00, with a 608 seating well
+    # in it. So 0.24 and 0.20, and the predicted thermal term did NOT appear.
+    # ABS shrinks about 0.7 percent on cooling and PLA about 0.3, so a hole
+    # proportional term was expected and is simply not in the data. The most
+    # likely reason is the enclosure: the part stays near its glass
+    # transition while it prints, shrinks while still gripped by the bed, and
+    # arrives at drawn-minus-extrusion like PLA does.
+    #
+    # The 0.04 between the two is less than calipers on a printed hole will
+    # reliably tell you, so per_mm stays 0.0 rather than fitting a slope
+    # through two points. 0.24 is the conservative one for a hole that has to
+    # clear, and the 22 mm figure is recorded in this comment rather than
+    # thrown away.
+    "ABS": dict(fixed=0.24, per_mm=0.0, rho=1.04, nozzle=250, bed=100,
+                note="MEASURED on fit coupon, 0.6 nozzle, ABS, 2026-11-11. "
+                     "8 mm bore 0.24, 22 mm pocket 0.20, 608 seats well"),
 }
 MATERIAL = "ABS"                     # what is on the printer now
 _mat = MATERIALS[MATERIAL]
@@ -204,6 +218,15 @@ MATERIAL_UNKNOWN = _mat["fixed"] is None
 # Literature estimate, used ONLY so the coupon and the un-fitted parts can
 # still be generated. Every fitted part is gated on the real measurement by
 # check_drive.py, and this number is not it.
+# THE TEARDROP MEASURES SHORT AND THAT IS NOT SHRINK. Drawn it stands
+# r(1 + sqrt(2)) + 0.25 = 10.20 mm tall for a 4.12 mm radius, and the ABS
+# coupon measured 9.60. That 0.60 is not the hole shrinking, it is the apex
+# not existing: teardrop_x builds the point from a 0.25 mm radius cylinder,
+# which is a 0.5 mm feature under a 0.6 mm nozzle, so the slicer rounds it
+# off. The part of the teardrop that does the work, the 45 degree flanks
+# that stop the top layer overhanging, prints fine. Anyone who measures the
+# height and finds 9.6 has found the nozzle, not a problem.
+
 HOLE_SHRINK = _mat["fixed"] if _mat["fixed"] is not None else 0.24
 HOLE_SHRINK_PER_MM = _mat["per_mm"] if _mat["per_mm"] is not None else 0.0
 LM_OD, LM_L = 15.0, 24.0             # LM8UU

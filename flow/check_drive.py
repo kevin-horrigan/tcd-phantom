@@ -621,3 +621,21 @@ check("a walking rod can only go one way",
       S.X_MOTOR_FACE <= 0.0 + 1e-9,
       "the motor bolts to the plate's front face at X=0, so forward travel "
       "is stopped by the motor. Only the rib direction is open")
+
+
+# ------------------------------------------- what the ABS coupon bought us
+# Measured 2026-11-11. The two fits that had almost nothing in them, re-run
+# against the real number rather than the estimate.
+_sh = S.MATERIALS[S.MATERIAL]["fixed"]
+_lm_clear = (S.LM_OD + 0.30) - _sh - S.LM_OD
+check("the LM8UU still slides into an ABS carriage",
+      _lm_clear >= 0.04,
+      "bore prints %.2f on a %.2f bearing, %+.2f mm clearance. The estimate "
+      "had this at 0.00 and the coupon says it is fine"
+      % ((S.LM_OD + 0.30) - _sh, S.LM_OD, _lm_clear))
+
+_grip = S.SYR_BARREL_D - ((S.SYR_BARREL_D - S.COLLAR_GRIP + S.HOLE_SHRINK) - _sh)
+check("the collar still grips the barrel",
+      0.05 <= _grip <= 0.30,
+      "%.2f mm of interference, designed for %.2f. It is a split ring under "
+      "zip ties, so this range is all usable" % (_grip, S.COLLAR_GRIP))
