@@ -43,7 +43,29 @@ SYS_DIR = os.path.join(os.environ["APPDATA"], "OrcaSlicer", "system", "Creality"
 MACHINE = os.path.join(SYS_DIR, "machine", "Creality K1C 0.6 nozzle.json")
 BASE = r"C:\dev\owl_candy\out\slice_budget\override_stand06_brim10.json"
 FILAMENT_SRC = r"C:\dev\owl_candy\out\slice_budget\filament_owl_pla_pro.json"
-RHO = 1.24                                   # g/cm3, PLA
+# Density follows the filament, because the mass and cost readout is wrong
+# otherwise and wrong quietly: ABS is 16 percent lighter than PLA, so every
+# part would be overstated by that much with no sign anything had changed.
+# syringe_drive.MATERIAL is the single place the material is declared.
+try:
+    import syringe_drive as _S
+    _M = _S.MATERIALS[_S.MATERIAL]
+    RHO = _M["rho"]
+    MATERIAL = _S.MATERIAL
+except Exception:                            # slicing without the model
+    RHO, MATERIAL, _M = 1.24, "PLA", None
+
+# ABS needs a hotter nozzle, a much hotter bed, and the chamber shut. The K1C
+# is enclosed, so this is a filament profile change rather than a hardware
+# problem, but FILAMENT_SRC below is a PLA Pro profile and will not be
+# silently right for ABS: hand --bed and --nozzle, or point it at an ABS
+# profile. The slicer does NOT warn when a profile only inherits.
+if MATERIAL != "PLA":
+    sys.stderr.write(
+        "NOTE: material is %s. FILAMENT_SRC is a PLA Pro profile, so pass\n"
+        "      --bed %d and --nozzle %d, or point FILAMENT_SRC at an %s\n"
+        "      profile. Density is already %.2f g/cm3 for the mass readout.\n"
+        % (MATERIAL, _M["bed"], _M["nozzle"], MATERIAL, RHO))
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "gcode")

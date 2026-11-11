@@ -179,7 +179,33 @@ ROD_D, ROD_SPACING = 8.0, 56.0       # two 8 mm smooth rods, centre to centre
 # 608 pocket depends on the same shrink: drawn at 22.20 for a 22.00 bearing it
 # would be a slip fit, and it only presses because it prints at about 21.96.
 # A global slicer hole compensation would fix the first and ruin the second.
-HOLE_SHRINK = 0.24                   # printed hole is this much under drawn
+#
+# AND IT IS A PROPERTY OF THE MATERIAL, not of the printer. The 0.24 above
+# was measured in PLA. Switching to ABS changes it twice over: ABS shrinks
+# roughly 0.7 percent on cooling against PLA's 0.3, so there is a term that
+# scales with the hole, on top of the fixed extrusion encroachment that
+# dominated in PLA. On a 15 mm LM8UU bore the extra is about 0.06 mm, which
+# is a quarter of the whole PLA figure, and it lands on a SLIDING fit.
+#
+# Same discipline as the motor and nut tables: measured or None, never a
+# plausible guess wearing a measured number's clothes.
+MATERIALS = {
+    "PLA": dict(fixed=0.24, per_mm=0.0, rho=1.24, nozzle=215, bed=60,
+                note="MEASURED on fit coupon rev 2, 0.6 nozzle, 2026-11-09. "
+                     "The frame, and everything printed before 2026-11-11"),
+    "ABS": dict(fixed=None, per_mm=None, rho=1.04, nozzle=250, bed=100,
+                note="UNMEASURED. Reprint fit_coupon in ABS and measure the "
+                     "608 pocket and BOTH rod bores before anything fitted"),
+}
+MATERIAL = "ABS"                     # what is on the printer now
+_mat = MATERIALS[MATERIAL]
+MATERIAL_UNKNOWN = _mat["fixed"] is None
+
+# Literature estimate, used ONLY so the coupon and the un-fitted parts can
+# still be generated. Every fitted part is gated on the real measurement by
+# check_drive.py, and this number is not it.
+HOLE_SHRINK = _mat["fixed"] if _mat["fixed"] is not None else 0.24
+HOLE_SHRINK_PER_MM = _mat["per_mm"] if _mat["per_mm"] is not None else 0.0
 LM_OD, LM_L = 15.0, 24.0             # LM8UU
 
 # ------------------------------------------------------------------- syringe

@@ -528,9 +528,53 @@ if _nut["flange_t"] is not None:
           "flange %.1f mm into a %.2f mm counterbore"
           % (_nut["flange_t"], S.NUT_FLANGE_T + S.FIT))
 
-if fails:
-    print("\n%d check(s) failed:" % len(fails))
-    for f in fails:
-        print("  - %s" % f)
-else:
-    print("\nall checks passed")
+# Registered with atexit rather than written at the bottom of the file. This
+# summary has now printed BEFORE later checks twice, because this file grows
+# by appending and anything "at the end" stops being at the end the next time
+# somebody adds a section. atexit cannot be outrun by an append.
+import atexit
+
+
+@atexit.register
+def _summary():
+    if fails:
+        print("\n%d check(s) failed:" % len(fails))
+        for f in fails:
+            print("  - %s" % f)
+    else:
+        print("\nall checks passed")
+
+
+# ------------------------------------------------------------ the material
+# Every press and slip fit in this model rests on HOLE_SHRINK, and that is a
+# property of the FILAMENT, not of the printer. The 0.24 mm was measured in
+# PLA. ABS shrinks about 0.7 percent on cooling against PLA's 0.3, so it adds
+# a term proportional to the hole on top of the fixed extrusion encroachment
+# that dominated in PLA: roughly 0.06 mm more on a 15 mm LM8UU bore, which is
+# a quarter of the whole PLA figure and lands on a SLIDING fit.
+_m = S.MATERIALS[S.MATERIAL]
+check("hole shrink is measured in the filament actually loaded",
+      not S.MATERIAL_UNKNOWN,
+      "%s is unmeasured. Reprint fit_coupon in it and measure the 608 "
+      "pocket and both rod bores. Until then every fitted part is drawn "
+      "against PLA's %.2f mm" % (S.MATERIAL, 0.24)
+      if S.MATERIAL_UNKNOWN else
+      "%s, fixed %.2f mm plus %.4f mm per mm of bore"
+      % (S.MATERIAL, _m["fixed"], _m["per_mm"]))
+
+# The frame is PLA and already on the bench. Parts printed in ABS have to
+# mate with it, so the cross-material joints are the ones to watch: the
+# collar sits in the frame's 16.0 mm saddle, and the carriage rides rods the
+# frame holds. Those are clearances, which is the forgiving direction.
+check("cross-material joints are clearances, not interference",
+      S.SADDLE_BORE >= S.SYR_BARREL_D,
+      "collar OD %.1f into a PLA saddle bored %.1f, zip-tied not pressed. "
+      "An ABS collar printing small is loose, which the ties take up"
+      % (S.SADDLE_BORE, S.SADDLE_BORE))
+
+check("every material in the table is complete or deliberately blank",
+      all(m["fixed"] is None or m["per_mm"] is not None
+          for m in S.MATERIALS.values()),
+      "%d materials listed, %d measured"
+      % (len(S.MATERIALS),
+         sum(1 for m in S.MATERIALS.values() if m["fixed"] is not None)))
