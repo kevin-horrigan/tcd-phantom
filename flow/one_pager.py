@@ -85,6 +85,20 @@ def main():
         ax.text(x, y, text, ha=ha, va=va, fontsize=size, color=col,
                 zorder=12, linespacing=1.6, fontweight=weight)
 
+    def bore(x, y, text, col=INK, rot=0):
+        """A size label sitting on the run it describes.
+
+        On the pipe rather than in the legend, because a buy list that says
+        "1/4 inch for everything but two places" leaves the reader to find
+        the two places, and finding them is the part that goes wrong.
+        """
+        ax.text(x, y, text, ha="center", va="center", fontsize=8.0,
+                color=col, zorder=14, linespacing=1.35, rotation=rot,
+                bbox=dict(boxstyle="round,pad=0.28", facecolor="white",
+                          edgecolor=col, linewidth=0.9))
+
+    QTR, SML, LUM = "1/4 in\n6.35 mm", "2 mm\nbore", "3 mm\n1/8 in barb"
+
     X_JAR, X_DROP = 0.55, 1.05
     X_R1A, X_R1B = 1.60, 2.45
     X_P1, X_PLEN = 3.30, 4.50
@@ -107,19 +121,24 @@ def main():
     lab(0.10, -0.70, "that height is\nthe whole push:\n%.0f mmHg" % mmhg(TANK),
         COOL, 10, ha="left", va="top")
     pipe(X_DROP, X_R1A)
+    bore(X_DROP, 2.35, QTR, COOL)
+    bore((X_DROP + X_R1A) / 2, 0.30, QTR, COOL)
 
     # ---------------------------------------------------------------- R1
     xs = np.linspace(X_R1A, X_R1B, 200)
     ax.plot(xs, 0.22 * np.sin((xs - X_R1A) / (X_R1B - X_R1A) * 8 * np.pi),
             color=HOT, lw=5.0, solid_capstyle="round", zorder=6)
-    lab((X_R1A + X_R1B) / 2, 0.55, "R1", HOT, 12, weight="bold")
+    lab((X_R1A + X_R1B) / 2, 0.78, "R1", HOT, 12, weight="bold")
+    bore((X_R1A + X_R1B) / 2, 0.38, SML, HOT)
     lab((X_R1A + X_R1B) / 2 - 0.12, -0.55,
         "about %.0f mm of\n2 mm bore tubing\ncut long, trim to suit"
         % (round(r1_L / 10.0) * 10), HOT, 9.5, va="top")
 
     # ------------------------------------------------------- piston at P1
     pipe(X_R1B, X_P1)
+    bore((X_R1B + X_P1) / 2, 0.30, QTR, COOL)
     vpipe(X_P1, -1.35, 0.0, col=HOT)
+    bore(X_P1 + 0.40, -0.85, QTR, HOT)
     ax.add_patch(Circle((X_P1, 0.0), 0.075, facecolor=INK, edgecolor="none",
                         zorder=7))
     ax.add_patch(FancyBboxPatch((X_P1 - 0.84, -2.95), 1.68, 1.50,
@@ -130,7 +149,9 @@ def main():
 
     # ------------------------------------------------------------ plenum
     pipe(X_P1, X_PLEN, col=HOT)
+    bore((X_P1 + X_PLEN) / 2 + 0.05, 0.30, QTR, HOT)
     vpipe(X_PLEN, 0.0, 1.30)
+    bore(X_PLEN - 0.50, 1.02, QTR, COOL)
     ax.add_patch(Rectangle((X_PLEN - 0.17, 0.95), 0.34, 1.15,
                            facecolor="#dce7f2", edgecolor=COOL, lw=1.8,
                            zorder=5))
@@ -157,11 +178,13 @@ def main():
         MUTE, 9.5, va="top")
 
     pipe(X_PLEN, X_RED)
+    bore(X_PLEN + 0.36, 0.30, QTR, COOL)
     ax.plot([X_RED - 0.07, X_RED + 0.07, X_RED + 0.07, X_RED - 0.07],
             [0.13, 0.055, -0.055, -0.13], color=INK, lw=1.8, zorder=6)
 
     # ------------------------------------------------------ settling run
     pipe(X_RED, X_IN, w=3.4, col=INK)
+    bore((X_RED + X_IN) / 2, 0.34, LUM, INK)
     lab((X_RED + X_IN) / 2 - 0.26, -0.50,
         "%.0f mm of straight\n3 mm tubing\nNO TEES HERE" % set_L, INK, 9.5,
         va="top")
@@ -171,6 +194,7 @@ def main():
                                 boxstyle="round,pad=0.02", facecolor="#eadfc8",
                                 edgecolor=SAND, lw=2.0, zorder=2))
     pipe(X_IN, X_OUT, w=3.4, col=INK, z=6)
+    bore((X_IN + X_OUT) / 2, 0.34, "3 mm\ncast lumen", SAND)
     lab((X_IN + X_OUT) / 2, 0.98, "THE HEAD", "#6b5636", 12.5, weight="bold")
     lab((X_IN + X_OUT) / 2, -0.96, "Group 1's block,\n3 mm lumen", SAND, 9.5,
         va="top")
@@ -183,6 +207,7 @@ def main():
 
     # ---------------------------------------------------------------- R2
     pipe(X_OUT, X_R2)
+    bore((X_OUT + X_R2) / 2, 0.30, QTR, COOL)
     ax.plot([X_R2 - 0.16, X_R2, X_R2 + 0.16], [0.28, 0.05, 0.28],
             color=INK, lw=2.2, zorder=6)
     ax.plot([X_R2 - 0.16, X_R2, X_R2 + 0.16], [-0.28, -0.05, -0.28],
@@ -193,6 +218,7 @@ def main():
 
     # ------------------------------------------------- reservoir and pump
     pipe(X_R2, X_RES)
+    bore((X_R2 + X_RES) / 2, 0.30, QTR, COOL)
     vpipe(X_RES, -1.55, 0.0)
     ax.add_patch(FancyBboxPatch((X_RES - 0.62, -2.35), 1.24, 0.82,
                                 boxstyle="round,pad=0.02", facecolor="#dce7f2",
