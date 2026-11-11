@@ -685,3 +685,24 @@ check("the collar still grips the barrel",
       0.05 <= _grip <= 0.30,
       "%.2f mm of interference, designed for %.2f. It is a split ring under "
       "zip ties, so this range is all usable" % (_grip, S.COLLAR_GRIP))
+
+
+# ------------------------------------------------- the registry is the list
+# rod_lock() existed, printed, rendered and passed its own checks while being
+# absent from build(), so print_plate crashed and the BOM would have shipped
+# a part nothing could slice. A function is not a part until the registry
+# says so, and nothing was watching the gap between the two.
+import print_plate as _PP
+_built = set(S.build())
+_oriented = set(n for n, _a, _c in _PP.ORIENT)
+check("every part in build() can be oriented for printing",
+      _oriented >= _built - {"fit_coupon"},
+      "missing from print_plate.ORIENT: %s"
+      % ", ".join(sorted(_built - {"fit_coupon"} - _oriented))
+      if _built - {"fit_coupon"} - _oriented else
+      "%d parts, all with a print orientation" % len(_oriented))
+check("every part print_plate orients actually exists",
+      _built >= _oriented,
+      "in ORIENT but not in build(): %s"
+      % ", ".join(sorted(_oriented - _built))
+      if _oriented - _built else "no orphans")

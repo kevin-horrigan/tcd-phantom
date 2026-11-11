@@ -824,7 +824,7 @@ def syringe():
 def build():
     return {"frame": frame(), "carriage": carriage(),
             "saddle_cap": saddle_cap(), "collar": collar(),
-            "rod_clamp": rod_clamp(),
+            "rod_clamp": rod_clamp(), "rod_lock": rod_lock(),
             "fit_coupon": fit_coupon()}
 
 
