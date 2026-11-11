@@ -111,13 +111,22 @@ BOM = [
      "40 SPS puts 4 samples across a 100 ms upstroke. Good enough for PI, "
      "which is peak, trough and mean, and not good enough for the shape of "
      "systole. Use these for bring-up and the compliance sweep"),
+    ("INSTRUMENTS", 2, "MPX5050GP", "0-50 kPa gauge, single port, ~1 ms",
+     "CHECK",
+     "P1 and P2. ALREADY SPECIFIED in GROUP-2_phase0-bench-rig.md with the "
+     "reasoning attached, including buy two, one each side of the compliance "
+     "chamber, which is P1 and P2 under other names. GP not DP: on the "
+     "dual-port part only the P1 face carries the gel and P2 is bare "
+     "silicon, so there is a wrong hole to plumb fluid into. Peak here is "
+     "19 percent of its scale. Gel-protected but qualified on DRY AIR, so "
+     "give it a short air dead leg"),
     ("INSTRUMENTS", 2, "Honeywell ABP2DANT005PG2A3XX",
      "0-5 psi gauge, I2C, barbed, LIQUID MEDIA", "LATER",
-     "P1 and P2. The 'T' in the part number is what makes it liquid media "
-     "with food-grade gel: an 'N' there is dry gases only and would be "
-     "destroyed. Barbless is ABP2DVNT005PG2A3XX and was the one actually "
-     "found in stock. 1 psi would be over range, there is nothing between "
-     "1 and 5, so 5 psi it is. ~200 Hz update, 3.3 V, I2C at 0x28"),
+     "The liquid-rated alternative, only if the dead leg on the MPX5050GP "
+     "is unwelcome. The 'T' in the part number is what makes it liquid "
+     "media with food-grade gel: an 'N' there is dry gases only and would "
+     "be destroyed. Barbless is ABP2DVNT005PG2A3XX. ~200 Hz, 3.3 V, and "
+     "both land on I2C 0x28 so they need the Pico's two buses"),
     ("INSTRUMENTS", 1, "clear tube and 1 mm capillary", "manometer standpipe",
      "BUY", "reads the MEAN to about a millimetre of fluid. The transducer's "
             "total error band is 1.5 percent of 5 psi, which is 4 mmHg, so "
