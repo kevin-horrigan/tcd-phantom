@@ -832,3 +832,28 @@ check("a ball bush does not transmit the piston load into the rod",
       "which is %.0fx smaller. Even a fully seized bush at %.0f N is %.0fx "
       "inside the stop's grip"
       % (_F_piston, _axial, _F_piston / _axial, _F_piston, 300.0 / _F_piston))
+
+# ------------------------------------------- the two firmware files agree
+# P1 and P2 go on the Pico that is ALREADY in the rig, because it is the
+# only board where the pressure samples and the step counter share a clock,
+# and telling a bad P2 from a bad piston is the whole reason P1 exists. That
+# only works if the sensor pins and the stepper pins are disjoint, and those
+# two facts live in two files that nothing was comparing.
+import re as _re
+import io as _io
+_cfg = _io.open("pico/config.py", encoding="utf-8").read()
+_prs = _io.open("pico/pressure.py", encoding="utf-8").read()
+_step = [int(n) for n in _re.search(
+    r"STEP_PIN, DIR_PIN, EN_PIN = ([\d, ]+)", _cfg).group(1).split(",")]
+_sense = [int(n) for n in _re.search(
+    r"P1_PIN, P2_PIN = ([\d, ]+)", _prs).group(1).split(",")]
+check("the sensor pins do not collide with the stepper",
+      not (set(_step) & set(_sense)),
+      "stepper on GP%s, sensors on GP%s. One Pico runs both, so the pressure "
+      "trace and the step count share a clock"
+      % ("/".join(map(str, _step)), "/".join(map(str, _sense))))
+check("the sensor pins are actually ADC pins",
+      all(26 <= p <= 28 for p in _sense),
+      "GP%s. Only GP26, 27 and 28 reach the RP2350's ADC, so a plausible "
+      "looking number on any other pin reads nothing"
+      % "/".join(map(str, _sense)))
