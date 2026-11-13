@@ -945,14 +945,23 @@ check("the anti-alias filter is above the pulse's own band",
 # an NXP forum thread exists of somebody asking whether the notched pin might
 # be pin 6, so "the side of the package", which is what these files used to
 # say, points at the wrong feature on the one part that dies if reversed.
-# The test is the INSTRUCTIONAL form: "by the notch in the side" is the old
-# wrong wording, while "not a notch in the side of the package" is the
-# correction and has to be allowed to stand.
-for _f, _t in (("wiring.py", _wir),
-               ("pico/pressure.py", _prs)):
-    _low = _t.lower()
+# Test what the student READS, not how the source happens to be wrapped.
+# The first version of this check searched the raw file and failed the moment
+# the datasheet quote broke across two A() calls, which is a check measuring
+# the line breaks instead of the instruction. So render the report and
+# collapse the whitespace, and test the INSTRUCTIONAL form: "by the notch in
+# the side" is the old wrong wording, while "not a notch in the side of the
+# package" is the correction and has to be allowed to stand.
+import contextlib as _cl
+import wiring as _W
+_buf = _io.StringIO()
+with _cl.redirect_stdout(_buf):
+    _W.report()
+_flat = " ".join(_buf.getvalue().split()).lower()
+_docflat = " ".join(_prs.split()).lower()
+for _f, _t in (("wiring.py's report", _flat),
+               ("pico/pressure.py's header", _docflat)):
     check("%s points pin 1 at the notch in the LEAD" % _f,
-          "notch in the lead" in _low
-          and "by the notch in the side" not in _low,
+          "notch in the lead" in _t and "by the notch in the side" not in _t,
           "the datasheet says 'pin 1 is noted by the notch in the lead', and "
-          "the package has moulding features of its own")
+          "the package has moulding marks of its own")
