@@ -911,3 +911,48 @@ check("no live BOM line points at a dropped part as if it were fitted",
       if _bad_ref else
       "the only part dropped is the %s, and every mention says so"
       % ", ".join(_dropped))
+
+# ------------------------------------- the anti-alias cap against the Nyquist
+# lab-phantom had to substitute the 0.47 uF film, because Kevin's MOGAOPI kit
+# has no film part: four 100 nF ceramics in parallel give 0.40 uF and 60 Hz
+# instead of 51. That is fine, and the reason it is fine is a number nobody
+# had written down, so the next substitution would have been guesswork. A
+# SINGLE 100 nF lands at 239 Hz, which is ABOVE the 125 Hz Nyquist, so it
+# filters nothing that matters and the aliasing is unchanged. The filter has
+# to sit between the signal and the Nyquist, and both bounds are real:
+# too small and high frequency noise folds in, too large and the systolic
+# upstroke is smeared by the instrument rather than measured.
+_wir = _io.open("wiring.py", encoding="utf-8").read()
+_cap = float(_re.search(r"^CAP = ([\d.e-]+)", _wir, _re.M).group(1))
+_rt = float(_re.search(r"R_TOP, R_BOT = ([\d.]+)e3", _wir).group(1)) * 1e3
+_rb = float(_re.search(r"R_TOP, R_BOT = [\d.]+e3, ([\d.]+)e3", _wir).group(1)) * 1e3
+_fs = float(_re.search(r"^SAMPLE_HZ = ([\d.]+)", _prs, _re.M).group(1))
+_rsrc = _rt * _rb / (_rt + _rb)
+_froll = 1.0 / (2.0 * 3.141592653589793 * _rsrc * _cap)
+_PULSE_HZ = 20.0            # the beat's own content, harmonics included
+check("the anti-alias filter is below the Nyquist frequency",
+      _froll < _fs / 2.0,
+      "%.0f Hz roll-off against a %.0f Hz Nyquist. A single 100 nF would be "
+      "239 Hz, above it, and would filter nothing that matters"
+      % (_froll, _fs / 2.0))
+check("the anti-alias filter is above the pulse's own band",
+      _froll > _PULSE_HZ,
+      "%.0f Hz roll-off against %.0f Hz of signal, %.1fx clear. Going much "
+      "bigger on the cap smears the systolic upstroke with the instrument"
+      % (_froll, _PULSE_HZ, _froll / _PULSE_HZ))
+
+# The notch is in the LEAD. The package has moulding features of its own and
+# an NXP forum thread exists of somebody asking whether the notched pin might
+# be pin 6, so "the side of the package", which is what these files used to
+# say, points at the wrong feature on the one part that dies if reversed.
+# The test is the INSTRUCTIONAL form: "by the notch in the side" is the old
+# wrong wording, while "not a notch in the side of the package" is the
+# correction and has to be allowed to stand.
+for _f, _t in (("wiring.py", _wir),
+               ("pico/pressure.py", _prs)):
+    _low = _t.lower()
+    check("%s points pin 1 at the notch in the LEAD" % _f,
+          "notch in the lead" in _low
+          and "by the notch in the side" not in _low,
+          "the datasheet says 'pin 1 is noted by the notch in the lead', and "
+          "the package has moulding features of its own")

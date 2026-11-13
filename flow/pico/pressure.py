@@ -23,7 +23,7 @@ WIRING, per sensor:
                                       |
                                     [ 20k ]
                                       |
-                           0.47 uF ---+--- Pico GND
+                       0.40-0.47 uF --+--- Pico GND
                                       |
                                      GND
 
@@ -31,16 +31,37 @@ WIRING, per sensor:
     sensor pin 3  Vs   -------------------> Pico VBUS (pin 40), 5 V
                        1 uF from pin 3 to GND, at the sensor
 
-    Pins 4, 5 and 6 are NO CONNECTS. Leave them.
+    Pins 4, 5 and 6 are internal connections. Leave them open: the
+    datasheet says do not connect them to external circuitry OR to ground.
 
-PIN 1 IS THE ONE BY THE NOTCH in the side of the package. Check it against
-the part before applying power: getting it backwards puts 5 V into the
-output pin. This is recorded in GROUP-2_phase0-bench-rig.md too.
+PIN 1 IS THE ONE BY THE NOTCH IN THE LEAD, not a notch in the side of the
+package. The datasheet's wording is "pin 1 is noted by the notch in the
+lead", and the distinction is not pedantry: the package has moulding
+features of its own, and an NXP forum thread exists of somebody asking
+whether the notched pin might be pin 6. Look at the metal legs, find the one
+with the bite taken out of it, and that is pin 1. Check it against the part
+before applying power, because backwards puts 5 V into the output pin and
+the sensor is gone. This is recorded in GROUP-2_phase0-bench-rig.md too.
 
-The 0.47 uF is not decoration. With the divider's 6.7k it is a 51 Hz
-low-pass, which is the anti-alias filter for a 250 Hz sample rate. The
-sensor itself responds in 1 ms, so without it everything up to 1 kHz folds
-straight into the band we care about.
+The cap across the 20k is not decoration. It is the anti-alias filter for a
+250 Hz sample rate, whose Nyquist is 125 Hz, and the sensor itself answers
+in 1 ms, so without it everything up to a kilohertz folds straight into the
+band we care about. Against the divider's 6.7k source:
+
+    0.47 uF film    51 Hz   the specified part
+    0.40 uF         60 Hz   4 x 100 nF ceramic in parallel, which is what
+                            Kevin's MOGAOPI kit can make. Fine. Still half
+                            of Nyquist and the pulse lives below 20 Hz
+    0.10 uF        239 Hz   NOT acceptable. A single 100 nF sits ABOVE
+                            Nyquist, so it filters nothing that matters and
+                            aliasing is unchanged
+    0.47 uF elec    51 Hz   fallback only, + to the ADC node. An
+                            electrolyte's leakage runs through 6.7k as a DC
+                            offset: 1 uA is 6.7 mV, which is 8 ADC counts or
+                            0.7 mmHg, and it drifts with temperature. Small
+                            against the sensor's own 9.4 mmHg, but it is an
+                            offset on the absolute reading, so prefer the
+                            four ceramics
 """
 from machine import ADC, Pin
 import time
@@ -104,7 +125,7 @@ def check():
         v = volts(pin)
         if v < DEAD_V:
             print("%s: %.3f V. NOT POWERED or not connected. Zero pressure "
-                  "would be %.2f V. Check VBUS and pin 1 by the notch."
+                  "would be %.2f V. Check VBUS and the notched LEAD."
                   % (name, v, VS * OFFSET))
             ok = False
         elif v > VS * (SENS * 50.0 + OFFSET) + 0.2:

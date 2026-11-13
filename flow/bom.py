@@ -236,20 +236,29 @@ BOM = [
             "the tube is the absolute reference and the sensor is the shape"),
     # The interface between the sensors and the Pico. Six passives, and
     # without the first two the Pico's 3.3 V ADC pin sees 4.70 V.
-    ("INSTRUMENTS", 2, "resistor, 10k, 1%", "0.25 W, through hole", "BUY",
-     "upper half of the divider on each sensor output. See wiring.py"),
-    ("INSTRUMENTS", 2, "resistor, 20k, 1%", "0.25 W, through hole", "BUY",
-     "lower half. 10k over 20k drops the sensor's 4.70 V full scale to "
-     "3.13 V, which fits the Pico's 3.3 V ADC with room to spare and loads "
-     "the sensor at only 0.16 mA"),
-    ("INSTRUMENTS", 2, "capacitor, 0.47 uF film", "50 V", "BUY",
-     "across the 20k. With the divider's 6.7k source this is a 51 Hz "
-     "low-pass, which is the anti-alias filter for sampling at 250 Hz. The "
-     "sensor answers in 1 ms, so without it a kilohertz of noise folds "
-     "straight into the band we care about"),
-    ("INSTRUMENTS", 2, "capacitor, 1 uF ceramic", "16 V", "BUY",
+    ("INSTRUMENTS", 2, "resistor, 10k, 1%", "0.25 W, metal film", "CHECK",
+     "upper half of the divider on each sensor output. Metal film out of "
+     "the MOGAOPI kit, so not a buy. See wiring.py"),
+    ("INSTRUMENTS", 2, "resistor, 20k, 1%", "0.25 W, metal film", "CHECK",
+     "lower half, also from the kit. 10k over 20k drops the sensor's 4.70 V "
+     "full scale to 3.13 V, which fits the Pico's 3.3 V ADC with room to "
+     "spare and loads the sensor at only 0.16 mA"),
+    ("INSTRUMENTS", 8, "capacitor, 100 nF ceramic", "four per sensor, in "
+     "parallel = 0.40 uF", "CHECK",
+     "THE ANTI-ALIAS FILTER, across the 20k. The spec was one 0.47 uF film "
+     "per sensor, which is 51 Hz against the divider's 6.7k source. The kit "
+     "has no film part, so four 100 nF in parallel make 0.40 uF and 60 Hz, "
+     "which is fine: sampling is 250 Hz, Nyquist is 125 and the pulse lives "
+     "below 20. A SINGLE 100 nF IS NOT A SUBSTITUTE. One is 239 Hz, above "
+     "Nyquist, so it filters nothing that matters. The kit's 0.47 uF "
+     "electrolytic is the fallback, + to the ADC node, but its leakage runs "
+     "through 6.7k as a DC offset of roughly 0.7 mmHg per microamp that "
+     "drifts with temperature, and that lands on the absolute reading"),
+    ("INSTRUMENTS", 2, "capacitor, 1 uF", "electrolytic, + to Vs", "CHECK",
      "supply decoupling, mounted at the sensor's own pins 2 and 3, per the "
-     "datasheet's application circuit"),
+     "datasheet's application circuit. The kit's part is an electrolytic "
+     "rather than the ceramic originally listed, so it is POLARIZED: + to "
+     "pin 3, - to pin 2. Backwards it conducts and then vents"),
     ("INSTRUMENTS", 2, "blunt luer needle, 16 gauge, 25 mm",
      "the restriction in front of the manometer", "BUY",
      "PART 3 OF 3 of the manometer, not an alternative to it. Luer, so it "

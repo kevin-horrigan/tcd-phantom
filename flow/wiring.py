@@ -18,6 +18,7 @@ the datasheet specifies 4.75 V minimum and calls the device ratiometric only
 characterised curve with no way to know by how much. Supply it properly and
 divide the output.
 """
+import math
 import os
 
 import matplotlib
@@ -32,7 +33,9 @@ OUT = os.path.join(HERE, "wiring.png")
 
 VS = 5.0
 R_TOP, R_BOT = 10.0e3, 20.0e3
-CAP = 0.47e-6
+CAP = 0.47e-6            # the specified film part. 0.40e-6 from four
+                         # 100 nF ceramics in parallel is also fine, see the
+                         # table in pico/pressure.py. A single 100 nF is not
 ADC_REF, ADC_BITS = 3.3, 12
 SENS, OFFSET = 0.018, 0.04          # Vout = VS * (SENS * P_kPa + OFFSET)
 FS_KPA = 50.0
@@ -75,11 +78,16 @@ def report():
     A("    accuracy        +-2.5%% of full scale = +-%.1f mmHg"
       % (0.025 * n["fs_mmhg"]))
     A("    response        1.0 ms")
-    A("    pins 4, 5, 6    NO CONNECT. Leave them")
+    A("    pins 4, 5, 6    internal. Not to external circuitry and NOT to")
+    A("                    ground either, which is what the datasheet says")
     A("")
-    A("  PIN 1 IS BY THE NOTCH in the side of the package. Check it against")
-    A("  the part in your hand before power goes on. Backwards puts 5 V into")
-    A("  the output pin and the part is gone.")
+    A("  PIN 1 IS THE LEAD WITH THE NOTCH IN IT, not a notch in the side of")
+    A("  the package. The datasheet's words are 'pin 1 is noted by the notch")
+    A("  in the lead'. Look at the metal legs, find the one with a bite out")
+    A("  of it, and count from there. The package has moulding marks of its")
+    A("  own, and there is an NXP forum thread of somebody asking whether")
+    A("  the notched pin might be pin 6, so this is worth half a minute:")
+    A("  backwards puts 5 V into the output pin and the part is gone.")
     A("")
 
     A("THE DIVIDER, and why it is not optional")
@@ -91,7 +99,7 @@ def report():
       % (n["vfsd"], ADC_REF))
     A("    loads the sensor   %.2f mA" % n["load_ma"])
     A("")
-    A("  The 0.47 uF across the lower resistor is the anti-alias filter, not")
+    A("  The cap across the lower resistor is the anti-alias filter, not")
     A("  decoration. Source impedance is %.1fk, so it rolls off at %.0f Hz."
       % (n["rsrc"] / 1e3, n["fc"]))
     A("  The sensor answers in 1 ms, which is 1 kHz of bandwidth, and")
@@ -99,6 +107,28 @@ def report():
     A("  into the band we care about. It also gives the ADC a low impedance")
     A("  to charge from, which a bare %.1fk divider would not."
       % (n["rsrc"] / 1e3))
+    A("")
+    A("  WHICH CAP. The spec is one 0.47 uF film per sensor, 51 Hz. Kevin's")
+    A("  MOGAOPI kit has no film part, so the filter is four 100 nF ceramics")
+    A("  in parallel: 0.40 uF, %.0f Hz, which is fine. Sampling is 250 Hz,"
+      % (1.0 / (2.0 * math.pi * n["rsrc"] * 0.40e-6)))
+    A("  Nyquist is 125 and the pulse lives below 20, so the filter still")
+    A("  sits between the signal and the fold-back.")
+    A("    4 x 100 nF    %3.0f Hz   use this" % (
+        1.0 / (2.0 * math.pi * n["rsrc"] * 0.40e-6)))
+    A("    0.47 uF film  %3.0f Hz   the spec, if you have one" % (
+        1.0 / (2.0 * math.pi * n["rsrc"] * 0.47e-6)))
+    A("    1 x 100 nF    %3.0f Hz   NO. Above Nyquist, so it filters" % (
+        1.0 / (2.0 * math.pi * n["rsrc"] * 0.10e-6)))
+    A("                           nothing that matters")
+    A("    0.47 uF elec  %3.0f Hz   fallback, + to the ADC node. Leakage" % (
+        1.0 / (2.0 * math.pi * n["rsrc"] * 0.47e-6)))
+    A("                           through %.1fk is a DC offset: 1 uA is"
+      % (n["rsrc"] / 1e3))
+    A("                           %.1f mV, %.0f counts, %.2f mmHg, and it"
+      % (1e-6 * n["rsrc"] * 1e3, 1e-6 * n["rsrc"] / n["lsb_v"],
+         1e-6 * n["rsrc"] / n["lsb_v"] * n["lsb_mmhg"]))
+    A("                           drifts with temperature")
     A("")
 
     A("WHAT YOU GET")
@@ -135,9 +165,12 @@ def report():
     A("")
 
     A("WIRING, per sensor")
-    A("  pin 1  Vout -> 10k -> ADC pin, 20k from there to GND, 0.47 uF too")
+    A("  pin 1  Vout -> 10k -> ADC pin, 20k from there to GND, and the")
+    A("         filter cap across that 20k")
     A("  pin 2  GND  -> Pico GND")
-    A("  pin 3  Vs   -> Pico VBUS, physical pin 40. 1 uF to GND at the part")
+    A("  pin 3  Vs   -> Pico VBUS, physical pin 40. 1 uF to GND at the part.")
+    A("         The kit's 1 uF is an ELECTROLYTIC, so + goes to pin 3 and -")
+    A("         to pin 2. Backwards it conducts and then vents")
     A("  P1 -> GP26 (ADC0), P2 -> GP27 (ADC1). GP2/3/4 are the stepper")
     A("")
     A("  VBUS IS ONLY LIVE ON USB. If the Pico is ever run from VSYS the")
@@ -188,7 +221,7 @@ def draw():
         ax.add_patch(Rectangle((sx - 0.5, sy + 6.6), 1.0, 2.0, fc=RED,
                                ec=RED, zorder=5))
         txt(sx - 1.4, sy + 7.6, "notch", 7.2, RED, ha="right")
-        txt(sx + 10, sy + 4.2, "pin 1 is the one\nby the notch", 7.6, RED,
+        txt(sx + 10, sy + 4.2, "pin 1 is the lead\nwith the notch", 7.6, RED,
             ha="center")
         txt(sx + 10, sy + 0.6, "pins 4 5 6 = N/C", 7.2, "#777", ha="center")
 
