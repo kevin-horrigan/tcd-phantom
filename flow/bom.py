@@ -13,10 +13,20 @@ them is the single part most likely to be bought wrong.
 Lengths come from syringe_drive at run time, so the screw and rod lengths here
 cannot drift from the frame that was actually printed.
 
-Status column:
-    HAVE   confirmed present and, where it matters, confirmed working
+Status column. These five are the whole set, and the roll-up at the end of
+main() derives its tally from the data rather than from a list written by
+hand, so a fifth status cannot appear here and quietly go uncounted. That is
+exactly what happened to the two PRINT rows: they existed for two commits and
+were absent from every total.
+    HAVE   confirmed present and, where it matters, confirmed working.
+           Printed parts earn this when they are off the machine
     CHECK  believed present, worth laying hands on before ordering
     BUY    not here
+    DROP   deliberately not fitted. Kept on the list so the reasoning is not
+           relearned, and counted apart from what is missing
+    LATER  a researched alternative to a part already chosen. Do not order
+           it with the rest. It is here so the decision does not have to be
+           made twice if the chosen part disappoints
 """
 import syringe_drive as S
 
@@ -26,26 +36,35 @@ SCREW_L = S.SCREW_SPAN + 12.0
 # group, qty, item, spec, status, note
 BOM = [
     ("PRINTED", 1, "frame", "%.0f x %.0f x %.0f mm, 162 mL"
-     % (182, 81, 59), "BUY", "plate 1, no measurement needed"),
-    ("PRINTED", 1, "saddle_cap", "clamps the collars", "BUY", "plate 1"),
+     % (182, 81, 59), "HAVE", "printed, ABS. The one part not to reprint: its "
+       "geometry is pinned and guarded, see check_drive"),
+    ("PRINTED", 1, "saddle_cap", "clamps the collars", "HAVE",
+     "printed on plate_small with the collars and the rod clamp"),
     ("PRINTED", 2, "collar", "%.1f mm OD, bore to the barrel" % S.SADDLE_BORE,
-     "BUY", "plate 2, needs the barrel OD"),
-    ("PRINTED", 1, "carriage", "LM8UU bores + T8 nut pocket", "BUY",
-     "plate 2, needs the three plunger numbers"),
+     "HAVE", "printed on plate_small. The bore is drawn to the barrel OD, so "
+             "a different plenum syringe means reprinting these two"),
+    ("PRINTED", 1, "rod_clamp", "ties the two rods to the frame", "HAVE",
+     "printed on plate_small. It was missing from this list for its whole "
+     "life while sitting in build(), in the 3-D assembly and on the bench, "
+     "because nothing compared the two registries. check_drive does now"),
+    ("PRINTED", 1, "carriage", "LM8UU bores + T8 nut pocket", "HAVE",
+     "printed, ABS. The plunger numbers it needed were taken out of the "
+     "print, see 0a0d7d2, so it did not have to wait on the syringe"),
 
     ("MOTION", 1, "T8x8 lead screw", "8 mm lead, cut to %.0f mm" % SCREW_L,
      "BUY", "8 mm PER REV, not 2 mm. T8x2 is far more common and wrong here"),
     ("MOTION", 1, "anti-backlash T8 nut", "spring preloaded, flanged",
      "BUY", "a plain nut gives 0.2 mm lost motion, 2 to 5% of the beat"),
-    ("PRINTED", 2, "rod_lock", "4.7 mL each, ~12 min", "PRINT",
+    ("PRINTED", 2, "rod_lock", "4.7 mL each, ~12 min", "HAVE",
      "Kevin's lockable collar, in the form the frame has room for. A plain "
      "collar stops ONE direction, and there is nowhere for the second: the "
      "carriage sweeps to within 4 mm of the rib. This one clamps the rod "
      "with an M3 AND bolts to the rib with two more, so the rod is fixed to "
-     "the frame and cannot walk either way"),
+     "the frame and cannot walk either way. Printed with rod_stop on "
+     "plate_rods, 48 min for both pairs"),
     ("FASTENERS", 4, "M3 x 12 socket cap", "rod lock and rod stop pinch", "BUY",
      "one per rod lock and one per rod stop, pulls the C shut on the rod"),
-    ("PRINTED", 2, "rod_stop", "3.2 mL each, ~9 min", "PRINT",
+    ("PRINTED", 2, "rod_stop", "3.2 mL each, ~9 min", "HAVE",
      "The forward stop, inboard of the rib. The rib lock alone takes travel "
      "toward the motor in compression and travel toward the syringe in "
      "thread pullout, and the carriage pushing the plunger nudges the rods "
@@ -111,7 +130,10 @@ BOM = [
             "and 91055 (3/8). Qosina needs a free account to see pricing. The "
             "luer-to-luer part cracks at 0.433 psi and stops the loop dead"),
     ("FLUID INTERFACE", 1, "tee", "barbed, 1/4 in ID", "BUY",
-     "piston tees in between the check valve and the phantom"),
+     "the piston tees into the loop here. This note used to say it sat "
+     "between the check valve and the phantom, which was true while the "
+     "valve was in. The valve is DROP, so the tee now joins the piston, "
+     "the jar return and the phantom feed directly"),
     ("FLUID INTERFACE", 2, "barb to female luer adapter", "1/4 in barb",
      "BUY", "the syringe tip is luer, the loop is barbed"),
     ("FLUID INTERFACE", 1, "reducing barb, 1/4 to 1/8 in", "the 3 mm transition",
@@ -260,6 +282,15 @@ TITLE = {"PRINTED": "PRINTED PARTS",
          "FASTENERS": "FASTENERS AND CONSUMABLES"}
 
 
+# Every status that may appear in BOM, in reporting order. main() raises if
+# a row carries one that is not here, rather than leaving it out of the tally.
+LABEL = {"HAVE": "already on the bench",
+         "CHECK": "probably here, confirm",
+         "BUY": "has to be ordered",
+         "DROP": "on the list to keep the reasoning, not to be fitted",
+         "LATER": "a researched alternative, not part of this order"}
+
+
 def main():
     print("WAVEFORM GENERATOR, COMPLETE BILL OF MATERIALS")
     print("Screw span %.0f mm, so screw %.0f mm and rods %.0f mm.\n"
@@ -273,31 +304,44 @@ def main():
                 print("           %s" % note)
         print("")
 
-    for st, label in (("HAVE", "already on the bench"),
-                      ("CHECK", "probably here, confirm"),
-                      ("BUY", "has to be ordered or printed")):
+    seen = []
+    for r in BOM:
+        if r[4] not in seen:
+            seen.append(r[4])
+    unknown = [st for st in seen if st not in LABEL]
+    if unknown:
+        raise SystemExit("bom: undocumented status %s" % ", ".join(unknown))
+    for st in [k for k in LABEL if k in seen]:
         rows = [r for r in BOM if r[4] == st]
         print("%-5s %2d line items, %3d pieces   %s"
-              % (st, len(rows), sum(r[1] for r in rows), label))
+              % (st, len(rows), sum(r[1] for r in rows), LABEL[st]))
+    print("      %2d line items, %3d pieces   every row, nothing dropped"
+          % (len(BOM), sum(r[1] for r in BOM)))
 
     print("\nTHE SHORT VERSION OF WHAT IS MISSING")
-    print("  Every moving part. The frame, carriage, collars and cap are not")
-    print("  printed yet, and not one piece of the motion hardware is here:")
-    print("  no screw, no nut, no rods, no LM8UU, no 608, no coupler. The")
-    print("  electronics are done and proven, the mechanism does not exist.")
-    print("\n  Two items decide whether the rig works at all rather than")
-    print("  merely existing, and both are easy to order wrong:")
+    print("  Not the printed parts any more. Every one of them is off the")
+    print("  machine: frame, carriage, two collars, rod clamp, saddle cap,")
+    print("  two rod locks, two rod stops. The electronics are done and")
+    print("  proven, and the two pressure sensors now have a board and a")
+    print("  pin assignment. What is missing is the bought motion hardware,")
+    print("  and it is the whole of it: no screw, no nut, no rods, no")
+    print("  LM8UU, no 608, no coupler. The rig is a printed skeleton with")
+    print("  nothing to slide on.")
+    print("\n  One item decides whether the rig works at all rather than")
+    print("  merely existing, and it is easy to order wrong:")
     beat_mm = 0.5 * 1000.0 / S.BORE_A
     rpm_wrong = (0.70 * beat_mm / 2.0) / 0.100 * 60.0
     print("    T8x8 lead screw.  T8x2 looks identical and is sold far more")
     print("                      often. At a 2 mm lead the same beat needs")
     print("                      %.0f rpm, which no 12 V NEMA 17 will do."
           % rpm_wrong)
-    print("    Qosina 91050 check valve.  There is no part called 9105x;")
-    print("                      that was a family wildcard in these notes and")
-    print("                      it is why the search came back empty. The")
-    print("                      luer-to-luer alternative cracks at 0.433 psi,")
-    print("                      which is the entire head.")
+    print("\n  The check valve used to be the second one here. It is DROP:")
+    print("    Qosina 91050.     DO NOT FIT. With a check valve, an empty")
+    print("                      plenum and R2 shut, the piston has nowhere")
+    print("                      to put its half millilitre and goes to its")
+    print("                      19 psi stall. The part number history stays")
+    print("                      on the line itself so nobody relearns that")
+    print("                      9105x is a family and not a part number.")
 
 
 if __name__ == "__main__":

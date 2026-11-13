@@ -857,3 +857,57 @@ check("the sensor pins are actually ADC pins",
       "GP%s. Only GP26, 27 and 28 reach the RP2350's ADC, so a plausible "
       "looking number on any other pin reads nothing"
       % "/".join(map(str, _sense)))
+
+# -------------------------------------------- the BOM is the third registry
+# lab-phantom caught that the printed parts were still marked BUY after they
+# came off the machine. Chasing it found something worse: rod_clamp was in
+# build(), in ORIENT, in the 3-D assembly and on the bench, and had never
+# once appeared in the BOM. The 3-D assembly check added earlier this session
+# covers build() against the model. Nothing covered build() against the list
+# the students actually order from, which is the registry that costs money
+# when it is wrong. Both directions, so a part cannot be added to one alone.
+import bom as _BOM
+_bom_printed = set(r[2] for r in _BOM.BOM if r[0] == "PRINTED")
+_shop = _built - {"fit_coupon"}        # the coupon is a calibration tile
+check("every printed part is in the BOM",
+      _shop <= _bom_printed,
+      "in build() and not on the list: %s"
+      % ", ".join(sorted(_shop - _bom_printed))
+      if _shop - _bom_printed else
+      "%d parts, all listed" % len(_bom_printed))
+check("the BOM does not list a printed part that does not exist",
+      _bom_printed <= _shop,
+      "on the list and not in build(): %s"
+      % ", ".join(sorted(_bom_printed - _shop))
+      if _bom_printed - _shop else
+      "nothing phantom on the printed list")
+
+# A status outside LABEL is not a typo, it is a row that disappears from
+# every total. Two PRINT rows did exactly that for two commits.
+_statuses = set(r[4] for r in _BOM.BOM)
+check("every BOM status is one the roll-up counts",
+      _statuses <= set(_BOM.LABEL),
+      "uncounted: %s" % ", ".join(sorted(_statuses - set(_BOM.LABEL)))
+      if _statuses - set(_BOM.LABEL) else
+      "%s. The tally is derived from the rows, so none can hide"
+      % ", ".join(sorted(_statuses)))
+
+# The printed set is complete, so saying otherwise on the list is a lie the
+# students would act on by reprinting parts that are sitting on the bench.
+_unprinted = [r[2] for r in _BOM.BOM if r[0] == "PRINTED" and r[4] != "HAVE"]
+check("the BOM agrees that the printing is done",
+      not _unprinted,
+      "still not marked HAVE: %s" % ", ".join(_unprinted) if _unprinted else
+      "all %d printed line items are off the machine" % len(_bom_printed))
+
+# A note that names a DROP part as live sends somebody shopping for it.
+_dropped = [r[2] for r in _BOM.BOM if r[4] == "DROP"]
+_bad_ref = [r[2] for r in _BOM.BOM if r[4] != "DROP"
+            for d in _dropped if d in r[5] and "DROP" not in r[5]
+            and "used to" not in r[5]]
+check("no live BOM line points at a dropped part as if it were fitted",
+      not _bad_ref,
+      "stale cross reference in: %s" % ", ".join(sorted(set(_bad_ref)))
+      if _bad_ref else
+      "the only part dropped is the %s, and every mention says so"
+      % ", ".join(_dropped))
