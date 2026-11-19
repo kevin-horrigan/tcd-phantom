@@ -18,6 +18,7 @@ bottoms out in a 10 mm blind hole, and its screws were on no list at all.
 EVERY NUMBER HERE IS DERIVED. Nothing is typed twice. If the model changes,
 this changes, and check_drive compares the two.
 """
+import glob
 import os
 
 import numpy as _np
@@ -353,6 +354,55 @@ def report():
     A("  motor dry, no syringe, and only then fill the loop.")
 
 
+# ------------------------------------------------------------------ the page
+# US letter, and the units ARE the paper: 100 wide by 129.41 tall is 8.5 x 11
+# at 11.765 units to the inch. It was 100 x 140 drawn at 8.5 x 11.9 in, which
+# is not a paper size anyone owns, so every print came out scale-to-fit at
+# about 92% and anything a student measured off the sheet was 8% small.
+PAGE_W, PAGE_H = 100.0, 100.0 * 11.0 / 8.5
+TXT_W = 62               # characters of text before the picture column
+PIC_W, PIC_H = 33.0, 25.0
+LINE = 2.9               # body line pitch
+
+# The three lines under WHEN IT IS TOGETHER, plus their heading. They are the
+# last thing on the last page and were the one block the measuring pass did
+# not know about, which is the same defect that cut the sheet off at step 7:
+# content that exists in the drawing and not in the measurement.
+CLOSE_H = 1.0 + 3.6 + LINE * 3
+
+
+def pages():
+    """Which steps land on which page, measured from the content.
+
+    Kept out of sheet() so it can be checked without rendering anything. The
+    first version of the sheet ran one page and stopped at step 7 because the
+    page filled, which looks finished and is not: the six it cut included the
+    saddle cap and the rod clamp, the two most likely to be built wrong.
+
+    Page 1 also carries the fastener table and the warning line above the
+    first step, so it has less room. Measuring every page as if it started at
+    the top is what ran step 4's CHECK lines off the bottom of page 1.
+    """
+    head1 = 3.6 + 3.1 * len(fasteners()) + 1.2 + 4.6
+    laid, cur, y = [], [], PAGE_H - 10.0 - head1
+    for i, (name, do, fast, test) in enumerate(steps(), 1):
+        body = ([("t", name)]
+                + [("d", l) for l in _wrap(do, TXT_W)]
+                + [("f", l) for l in _wrap("FASTENER: " + fast, TXT_W - 2)]
+                + [("c", l) for l in _wrap("CHECK: " + test, TXT_W - 2)])
+        text_h = 4.0 + LINE * (len(body) - 1)
+        need = max(text_h, PIC_H) + 3.0
+        if y - need < 8.0:
+            laid.append(cur)
+            cur, y = [], PAGE_H - 10.0
+        cur.append((i, body, need))
+        y -= need
+    laid.append(cur)
+    if y - CLOSE_H < 8.0:
+        laid.append([])          # the closing block gets a page of its own
+    return laid
+
+
 def sheet():
     """The procedure as printable pages: text on the left, a picture of that
     step on the right, with the part going on shown in red.
@@ -366,37 +416,21 @@ def sheet():
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import matplotlib.image as mpimg
+    from matplotlib.backends.backend_pdf import PdfPages
 
     INK, MUT, RED, GRN = "#1a1a1a", "#555555", "#b3202c", "#2e6b34"
     figs = figures()
-    st = steps()
-    W, H = 100.0, 140.0
-    TXT_W = 62           # characters of text before the picture column
-    PIC_W, PIC_H = 33.0, 25.0
+    laid = pages()
 
-    # measure first, so the page count comes from the content
-    # Page 1 carries the fastener table and the warning line above the first
-    # step, so it has less room. Measuring every page as if it started at the
-    # top is what ran step 4's CHECK lines off the bottom of page 1.
-    HEAD1 = 3.6 + 3.1 * len(fasteners()) + 1.2 + 4.6
-    laid, cur, y = [], [], H - 10.0 - HEAD1
-    for i, (name, do, fast, test) in enumerate(st, 1):
-        body = ([("t", name)]
-                + [("d", l) for l in _wrap(do, TXT_W)]
-                + [("f", l) for l in _wrap("FASTENER: " + fast, TXT_W - 2)]
-                + [("c", l) for l in _wrap("CHECK: " + test, TXT_W - 2)])
-        text_h = 4.0 + 2.9 * (len(body) - 1)
-        need = max(text_h, PIC_H) + 3.0
-        if y - need < 8.0:
-            laid.append(cur)
-            cur, y = [], H - 10.0
-        cur.append((i, body, need))
-        y -= need
-    laid.append(cur)
+    # A run that paginates to fewer pages than the last one must not leave
+    # the old final page sitting next to the new ones, because a stale page 5
+    # of 5 looks exactly as authoritative as a live one.
+    for f in glob.glob(OUT.replace(".png", "_p*.png")):
+        os.remove(f)
 
-    out = []
+    out, W, H = [], PAGE_W, PAGE_H
     for pno, page in enumerate(laid, 1):
-        fig = plt.figure(figsize=(8.5, 11.9), facecolor="white")
+        fig = plt.figure(figsize=(8.5, 11.0), facecolor="white")
         ax = fig.add_axes([0, 0, 1, 1])
         ax.set_xlim(0, W)
         ax.set_ylim(0, H)
@@ -469,10 +503,27 @@ def sheet():
 
         f = OUT.replace(".png", "_p%d.png" % pno)
         fig.savefig(f, dpi=170, facecolor="white")
-        plt.close(fig)
-        out.append(f)
+        out.append((f, fig))
         print("wrote %s" % f)
-    return out
+
+    # The PDF is the thing that actually gets handed over: one file, pages in
+    # order, vector text that stays sharp at whatever the lab printer does.
+    # The PNGs stay because they paste straight into a message, where a PDF
+    # has to be opened first. Nothing else in the repo reads them.
+    pdf = OUT.replace(".png", ".pdf")
+    with PdfPages(pdf) as pp:
+        for _f, fig in out:
+            pp.savefig(fig, facecolor="white")
+        d = pp.infodict()
+        d["Title"] = "How the pump goes together"
+        d["Subject"] = ("Assembly procedure for the syringe drive, "
+                        "%d steps, every number read out of the model"
+                        % len(steps()))
+        d["Keywords"] = "TCD phantom, flow loop, syringe drive, assembly"
+    for _f, fig in out:
+        plt.close(fig)
+    print("wrote %s  (%d pages)" % (pdf, len(laid)))
+    return [f for f, _fig in out] + [pdf]
 
 
 def _wrap(s, n):

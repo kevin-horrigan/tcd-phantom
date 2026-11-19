@@ -565,7 +565,7 @@ import atexit
 # crash never ran and the summary still said everything was fine. That is a
 # dead instrument reporting success, which is the one failure this whole file
 # exists to prevent, so it now counts itself.
-EXPECTED = 114
+EXPECTED = 116
 
 
 @atexit.register
@@ -1223,3 +1223,21 @@ check("every step has a picture",
       set(_BS.VIEWS) == set(range(1, len(_BS.steps()) + 1)),
       "%d steps, %d views, none without a figure"
       % (len(_BS.steps()), len(_BS.VIEWS)))
+
+# ------------------------------------------------------- the pagination itself
+# "sheet() carries every step" above is a claim about steps(), not about the
+# page the student holds. pages() does the measuring, so measure IT: every
+# step on exactly one page, no step on two, none lost between them.
+_laid = _BS.pages()
+_on = [i for page in _laid for i, _b, _n in page]
+check("every step lands on exactly one page",
+      sorted(_on) == list(range(1, len(_BS.steps()) + 1)),
+      "%d pages, steps %s" % (len(_laid), _on))
+
+# And the page is really US letter. It was 100 x 140 units drawn at 8.5 x 11.9
+# in, which is not a paper size: every print came out scale-to-fit at about
+# 92%, so anything measured off the sheet was 8% small.
+check("the page is US letter",
+      abs(_BS.PAGE_W / _BS.PAGE_H - 8.5 / 11.0) < 1e-9,
+      "%.1f x %.2f units is %.3f, letter is %.3f"
+      % (_BS.PAGE_W, _BS.PAGE_H, _BS.PAGE_W / _BS.PAGE_H, 8.5 / 11.0))
