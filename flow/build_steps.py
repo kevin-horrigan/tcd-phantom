@@ -20,6 +20,8 @@ this changes, and check_drive compares the two.
 """
 import os
 
+import numpy as _np
+
 import syringe_drive as S
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -176,6 +178,150 @@ def steps():
     ]
 
 
+# --------------------------------------------------------------- pictures
+# One rendered view per step, built from the same meshes the 3-D page uses,
+# so a picture cannot show something the model does not have.
+#
+# The trick that makes these readable: EVERY visible triangle from every part
+# goes into ONE Poly3DCollection, depth sorted together. Drawing each part as
+# its own collection is what made earlier 3-D renders here unusable, because
+# matplotlib sorts whole collections against each other and not the triangles
+# inside them, so the frame's saddle would paint over parts standing in front
+# of it. Concatenating first removes the problem entirely rather than fighting
+# it with z-bias.
+#
+# Already-built parts go grey and the step's own part goes red, which is the
+# whole job of the picture: not "what does the rig look like" but "which thing
+# am I holding and where does it go".
+LIGHT = _np.array([0.45, -0.75, 0.55])
+LIGHT = LIGHT / _np.linalg.norm(LIGHT)
+GREY = (0.78, 0.78, 0.76)
+NEW = (0.70, 0.16, 0.24)
+
+
+def _eye(elev, azim):
+    e, a = _np.radians(elev), _np.radians(azim)
+    return _np.array([_np.cos(e) * _np.cos(a),
+                      _np.cos(e) * _np.sin(a), _np.sin(e)])
+
+
+def _collect(meshes, view):
+    """Every forward facing triangle from every mesh, shaded and depth sorted
+    as one pile. Returns (triangles, rgb) ready for a single collection."""
+    tris, cols = [], []
+    for mesh, base in meshes:
+        keep = mesh.face_normals @ view > 0.0
+        if not keep.any():
+            continue
+        tri, nrm = mesh.triangles[keep], mesh.face_normals[keep]
+        lam = 0.38 + 0.62 * _np.clip(nrm @ LIGHT, 0.0, 1.0)
+        tris.append(tri)
+        cols.append(_np.clip(_np.array(base)[None, :] * lam[:, None], 0, 1))
+    if not tris:
+        return None, None
+    tri = _np.concatenate(tris)
+    rgb = _np.concatenate(cols)
+    order = _np.argsort(tri.mean(axis=1) @ view)
+    return tri[order], rgb[order]
+
+
+# How to frame each step. BUILD says how much of the rig to draw, HERO says
+# which part goes red. They are NOT the same: step 3 fits the LM8UU bushes
+# into the carriage, but assembly order puts the bushes before the carriage,
+# so building only as far as the bushes draws two bearings floating in a
+# frame. Build to the carriage, redden the bushes, and the picture says what
+# the step says. The first version tied the two together and step 3 showed a
+# red carriage under the words "LM8UU x2 into the carriage".
+#
+#   step: (build_to, hero, elev, azim, pad)   pad None = frame the whole rig
+VIEWS = {
+    1: (None, None, 26, -58, None),
+    2: ("608 bearing", "608 bearing", 18, -132, 18),
+    3: ("carriage", "LM8UU x2", 24, -54, 22),
+    4: ("carriage", "T8 anti-backlash nut", 22, -44, 20),
+    5: ("8 mm shafts x2", "8 mm shafts x2", 26, -58, None),
+    6: ("rod stop x2", "rod stop x2", 20, -128, 20),
+    7: ("rod lock x2", "rod lock x2", 20, -34, 20),
+    8: ("5-8 mm coupler", "Tr8x8 lead screw", 26, -58, None),
+    9: ("NEMA 17 pancake", "NEMA 17 pancake", 22, -64, 26),
+    10: ("split collars x2", "split collars x2", 16, -34, 22),
+    11: ("syringe barrel", "syringe barrel", 22, -48, None),
+    12: ("saddle cap + ties", "saddle cap + ties", 16, -32, 22),
+    13: ("rod clamp", "rod clamp", 22, -40, 18),
+}
+
+
+def figures(outdir=None):
+    """Render one PNG per step. Returns {step number: path}."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+    import assembly as A
+
+    outdir = outdir or os.path.join(HERE, "steps")
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
+    built = A.parts()
+    order = [n for n, _m, _c, _e, _t in built]
+    out = {}
+
+    for i, (name, _do, _f, _t) in enumerate(steps(), 1):
+        build_to, hero_name, elev, azim, pad = VIEWS[i]
+        upto = order.index(build_to) if build_to else len(built) - 1
+        hero_i = order.index(hero_name) if hero_name else -1
+        view = _eye(elev, azim)
+
+        meshes, hero = [], None
+        for k, (n, m, _c, _e, _tx) in enumerate(built):
+            if k > upto:
+                continue
+            if k == hero_i:
+                meshes.append((m, NEW))
+                hero = m
+            else:
+                meshes.append((m, GREY))
+        tri, rgb = _collect(meshes, view)
+        if tri is None:
+            continue
+
+        fig = plt.figure(figsize=(3.4, 2.6), facecolor="white")
+        ax = fig.add_axes([-0.14, -0.14, 1.28, 1.28], projection="3d")
+        ax.set_proj_type("ortho")
+        ax.add_collection3d(Poly3DCollection(
+            tri, facecolors=rgb, edgecolors=rgb, linewidths=0.25,
+            shade=False))
+
+        if pad and hero is not None:
+            # A mirrored pair spans the whole width, so cropping to its
+            # bounds crops to nothing: step 6 framed a 126 mm cube and the
+            # rod stop came out four pixels wide behind the rib. Focus on
+            # ONE of the pair when the mesh is symmetric about y = 0.
+            v = hero.vertices
+            if (v[:, 1].min() < -1.0 < 1.0 < v[:, 1].max()
+                    and abs(v[:, 1].min() + v[:, 1].max()) < 1.0):
+                v = v[v[:, 1] >= -1.0]
+            lo, hi = v.min(axis=0) - pad, v.max(axis=0) + pad
+        else:
+            allv = _np.concatenate([m.vertices for m, _c in meshes])
+            lo, hi = allv.min(axis=0) - 6, allv.max(axis=0) + 6
+        mid = (lo + hi) / 2.0
+        r = float((hi - lo).max()) / 2.0
+        ax.set_xlim(mid[0] - r, mid[0] + r)
+        ax.set_ylim(mid[1] - r, mid[1] + r)
+        ax.set_zlim(mid[2] - r, mid[2] + r)
+        ax.set_box_aspect((1, 1, 1))
+        ax.view_init(elev=elev, azim=azim)
+        ax.set_axis_off()
+
+        f = os.path.join(outdir, "step%02d.png" % i)
+        fig.savefig(f, dpi=150, facecolor="white")
+        plt.close(fig)
+        out[i] = f
+        print("  step %2d  %s" % (i, os.path.basename(f)))
+    return out
+
+
 def report():
     def A(t=""):
         print(t)
@@ -208,97 +354,116 @@ def report():
 
 
 def sheet():
-    """The same procedure as printable pages, for the bench.
+    """The procedure as printable pages: text on the left, a picture of that
+    step on the right, with the part going on shown in red.
 
-    It paginates. The first version ran one figure and stopped at step 7
-    because the page ran out, which is a sheet that looks finished and is
-    not: the last six steps include the two the students are most likely to
-    get wrong. A procedure that silently truncates is worse than no sheet.
+    It paginates on measured content. The first version ran one figure and
+    stopped at step 7 because the page filled, which looks finished and is
+    not: the six it cut include the saddle cap and the rod clamp, the two
+    most likely to be built wrong.
     """
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    import matplotlib.image as mpimg
 
     INK, MUT, RED, GRN = "#1a1a1a", "#555555", "#b3202c", "#2e6b34"
+    figs = figures()
     st = steps()
     W, H = 100.0, 140.0
-    pages, cur, y = [], [], H - 10.0
+    TXT_W = 62           # characters of text before the picture column
+    PIC_W, PIC_H = 33.0, 25.0
 
-    # lay the steps out first, so the page count comes from the content
+    # measure first, so the page count comes from the content
+    # Page 1 carries the fastener table and the warning line above the first
+    # step, so it has less room. Measuring every page as if it started at the
+    # top is what ran step 4's CHECK lines off the bottom of page 1.
+    HEAD1 = 3.6 + 3.1 * len(fasteners()) + 1.2 + 4.6
+    laid, cur, y = [], [], H - 10.0 - HEAD1
     for i, (name, do, fast, test) in enumerate(st, 1):
         body = ([("t", name)]
-                + [("d", l) for l in _wrap(do, 104)]
-                + [("f", l) for l in _wrap("FASTENER: " + fast, 100)]
-                + [("c", l) for l in _wrap("CHECK: " + test, 100)])
-        need = 4.0 + 2.9 * (len(body) - 1) + 2.4
+                + [("d", l) for l in _wrap(do, TXT_W)]
+                + [("f", l) for l in _wrap("FASTENER: " + fast, TXT_W - 2)]
+                + [("c", l) for l in _wrap("CHECK: " + test, TXT_W - 2)])
+        text_h = 4.0 + 2.9 * (len(body) - 1)
+        need = max(text_h, PIC_H) + 3.0
         if y - need < 8.0:
-            pages.append(cur)
+            laid.append(cur)
             cur, y = [], H - 10.0
-        cur.append((i, body))
+        cur.append((i, body, need))
         y -= need
-    pages.append(cur)
+    laid.append(cur)
 
     out = []
-    for pno, page in enumerate(pages, 1):
+    for pno, page in enumerate(laid, 1):
         fig = plt.figure(figsize=(8.5, 11.9), facecolor="white")
         ax = fig.add_axes([0, 0, 1, 1])
         ax.set_xlim(0, W)
         ax.set_ylim(0, H)
         ax.axis("off")
 
-        def txt(x, y, s, size=8.0, c=INK, w="normal"):
-            ax.text(x, y, s, fontsize=size, color=c, ha="left", va="top",
+        def txt(x, yy, t, size=8.0, c=INK, w="normal"):
+            ax.text(x, yy, t, fontsize=size, color=c, ha="left", va="top",
                     family="DejaVu Sans", fontweight=w)
 
         y = H - 6.0
         txt(6, y, "HOW THE PUMP GOES TOGETHER", 15.5, INK, "bold")
-        txt(94 - 14, y + 0.6, "page %d of %d" % (pno, len(pages)), 8.4, MUT)
+        txt(80, y + 0.6, "page %d of %d" % (pno, len(laid)), 8.4, MUT)
         y -= 4.6
-        txt(6, y, "Every number is read out of the model. The frame is PLA; "
-                  "every other printed part is ABS.", 8.0, MUT)
+        txt(6, y, "The part going on at each step is RED. Every number is "
+                  "read out of the model.", 8.0, MUT)
         y -= 5.2
 
         if pno == 1:
             txt(6, y, "FASTENERS, all of them", 10.5, INK, "bold")
             y -= 3.6
-            for name, qty, where in fasteners():
+            for nm, qty, where in fasteners():
                 txt(8, y, "%d x" % qty, 8.4, RED, "bold")
-                txt(14, y, name, 8.4, INK, "bold")
+                txt(14, y, nm, 8.4, INK, "bold")
                 txt(48, y, where, 8.2, MUT)
                 y -= 3.1
-            y -= 1.0
+            y -= 1.2
             txt(6, y, "Steps 6 and 7 happen WHILE the shafts go in, not "
                       "after: the rod stop's bore is closed.", 8.2, RED,
                 "bold")
-            y -= 4.4
+            y -= 4.6
 
-        for i, body in page:
-            txt(6, y, "%d" % i, 11.5, RED, "bold")
+        for i, body, need in page:
+            top = y
+            txt(5, y, "%d" % i, 11.5, RED, "bold")
             for kind, line in body:
                 if kind == "t":
-                    txt(11, y, line, 10.4, INK, "bold")
+                    txt(10, y, line, 10.4, INK, "bold")
                     y -= 4.0
                 elif kind == "d":
-                    txt(11, y, line, 8.2, INK)
+                    txt(10, y, line, 8.2, INK)
                     y -= 2.9
                 elif kind == "f":
-                    txt(11, y, line, 8.2, RED)
+                    txt(10, y, line, 8.2, RED)
                     y -= 2.9
                 else:
-                    txt(11, y, line, 8.0, GRN)
+                    txt(10, y, line, 8.0, GRN)
                     y -= 2.9
-            y -= 2.4
 
-        if pno == len(pages):
+            if i in figs:
+                bx, by = W - PIC_W - 4.0, top - PIC_H + 1.5
+                iax = fig.add_axes([bx / W, by / H, PIC_W / W, PIC_H / H])
+                iax.imshow(mpimg.imread(figs[i]))
+                iax.axis("off")
+
+            y = top - need
+
+        if pno == len(laid):
             y -= 1.0
             txt(6, y, "WHEN IT IS TOGETHER", 10.5, INK, "bold")
             y -= 3.6
             for line in (
                     "Turn the coupler by hand through the whole stroke "
-                    "before any power is applied. The carriage",
-                    "should move %.0f mm with no tight spot and no rising "
-                    "effort. Then run the motor dry, with no" % S.TRAVEL,
-                    "syringe fitted, and only then fill the loop."):
+                    "before any power is applied.",
+                    "The carriage should move %.0f mm with no tight spot "
+                    "and no rising effort. Then run" % S.TRAVEL,
+                    "the motor dry, with no syringe fitted, and only then "
+                    "fill the loop."):
                 txt(8, y, line, 8.2, INK)
                 y -= 2.9
 

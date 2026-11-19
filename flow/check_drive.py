@@ -565,7 +565,7 @@ import atexit
 # crash never ran and the summary still said everything was fine. That is a
 # dead instrument reporting success, which is the one failure this whole file
 # exists to prevent, so it now counts itself.
-EXPECTED = 112
+EXPECTED = 114
 
 
 @atexit.register
@@ -1205,3 +1205,21 @@ check("the printed sheet carries every step",
       len(_BS.steps()) >= 13,
       "%d steps, and sheet() paginates rather than running off the page"
       % len(_BS.steps()))
+
+# ------------------------------------- every step has a picture of a real part
+# Same registry discipline as everywhere else: VIEWS names parts by string, so
+# a rename in assembly.py would silently drop a picture or crash the sheet.
+_names = set(n for n, _m, _c, _e, _t in _AS.parts())
+_bad = []
+for _i, (_b, _h, _e1, _a1, _p1) in _BS.VIEWS.items():
+    for _n in (_b, _h):
+        if _n is not None and _n not in _names:
+            _bad.append("step %d: %r" % (_i, _n))
+check("every view names a part the assembly actually draws",
+      not _bad,
+      "; ".join(_bad) if _bad else
+      "%d views, every build and hero name resolves" % len(_BS.VIEWS))
+check("every step has a picture",
+      set(_BS.VIEWS) == set(range(1, len(_BS.steps()) + 1)),
+      "%d steps, %d views, none without a figure"
+      % (len(_BS.steps()), len(_BS.VIEWS)))
