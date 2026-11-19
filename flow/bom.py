@@ -27,6 +27,9 @@ were absent from every total.
     LATER  a researched alternative to a part already chosen. Do not order
            it with the rest. It is here so the decision does not have to be
            made twice if the chosen part disappoints
+    PRINT  the model is ready and the part has to come off the printer. Not
+           the same as BUY, and it earned its place back the moment the
+           saddle cap turned out to need remaking
 """
 import syringe_drive as S
 
@@ -38,8 +41,21 @@ BOM = [
     ("PRINTED", 1, "frame", "%.0f x %.0f x %.0f mm, 162 mL"
      % (182, 81, 59), "HAVE", "printed, ABS. The one part not to reprint: its "
        "geometry is pinned and guarded, see check_drive"),
-    ("PRINTED", 1, "saddle_cap", "clamps the collars", "HAVE",
-     "printed on plate_small with the collars and the rod clamp"),
+    ("PRINTED", 1, "saddle_cap", "%.0f x %.0f x %.0f mm, %.1f mL, ~20 min"
+     % (S.CAP_L, S.CAP_W, S.CAP_T, S.build()["saddle_cap"].volume / 1000.0),
+     "PRINT",
+     "REPRINT. The one printed on plate_small is the wrong part. Kevin spotted "
+     "it in the 3-D model: there are TWO strap stations 32 mm apart and TWO "
+     "collars, and the old cap was a 26 mm block that spanned X 128 to 154 "
+     "while the second collar starts at 158, so it never touched the far "
+     "collar. Its own tie grooves were at X 134 to 138 against the frame's "
+     "130 to 134, so no zip tie could pass through both, and its roof over "
+     "the barrel channel was 0.65 mm, one perimeter at a 0.6 nozzle, on the "
+     "exact face the tie pulls against. The new one bridges both collars at "
+     "X %.0f to %.0f with grooves taken from the frame's own strap positions "
+     "and a %.2f mm roof. The old one is scrap: it is not a spare, because "
+     "there is nothing it fits" % (S.CAP_X0, S.CAP_X1,
+                                   S.CAP_T - (S.SADDLE_BORE / 2 + S.FIT))),
     ("PRINTED", 2, "collar", "%.1f mm OD, bore to the barrel" % S.SADDLE_BORE,
      "HAVE", "printed on plate_small. The bore is drawn to the barrel OD, so "
              "a different plenum syringe means reprinting these two"),
@@ -62,8 +78,16 @@ BOM = [
      "with an M3 AND bolts to the rib with two more, so the rod is fixed to "
      "the frame and cannot walk either way. Printed with rod_stop on "
      "plate_rods, 48 min for both pairs"),
-    ("FASTENERS", 4, "M3 x 12 socket cap", "rod lock and rod stop pinch", "BUY",
-     "one per rod lock and one per rod stop, pulls the C shut on the rod"),
+    ("FASTENERS", 6, "M3 x %.0f socket cap" % S.CLAMP_SCREW_L,
+     "rod lock, rod stop, rod clamp", "BUY",
+     "one per rod lock and one per rod stop, pulling the C shut on the rod, "
+     "PLUS TWO for the rod clamp, which had no row at all until the assembly "
+     "instructions made every step name its fastener. The clamp's length is "
+     "not free: the screw crosses the 5 mm bar before any thread reaches the "
+     "carriage, and the carriage's hole is blind and 10 mm deep, so the "
+     "M3 x 16 the 3-D model used to call for leaves 11 mm for a 10 mm hole "
+     "and bottoms out. A bottomed screw feels tight and clamps nothing, and "
+     "this clamp is the only thing carrying the plunger"),
     ("PRINTED", 2, "rod_stop", "3.2 mL each, ~9 min", "HAVE",
      "The forward stop, inboard of the rib. The rib lock alone takes travel "
      "toward the motor in compression and travel toward the syringe in "
@@ -297,7 +321,8 @@ LABEL = {"HAVE": "already on the bench",
          "CHECK": "probably here, confirm",
          "BUY": "has to be ordered",
          "DROP": "on the list to keep the reasoning, not to be fitted",
-         "LATER": "a researched alternative, not part of this order"}
+         "LATER": "a researched alternative, not part of this order",
+         "PRINT": "model ready, has to come off the printer"}
 
 
 def main():

@@ -342,6 +342,7 @@ PLUNGER_ROD_D = 12.0                 # across the cross            MEASURED
 SADDLE_BORE = 16.0                   # frame and cap see this, never the barrel
 COLLAR_L = 12.0
 
+
 # 14.0 inside 16.0 leaves 1.0 mm of wall, under the 1.2 this once demanded.
 # 1.2 was a guess at "two perimeters and a bit" and it fires correctly here,
 # so the question is whether 1.0 is actually unprintable or merely thinner
@@ -532,6 +533,58 @@ X_TIP = X_RIB_BACK + SYR_BARREL_L
 FRAME_SADDLE_L = 56.0                # as built  <-- reprint required to change
 X_SADDLE_END = X_RIB_BACK + FRAME_SADDLE_L
 X_END = X_SADDLE_END + 6.0
+
+# ------------------------------------------------------ the barrel straps
+# Kevin, looking at the 3-D model: "the one piece that goes on top of the
+# syringe looks like it is not wide enough to actually cover the syringe
+# top". It was worse than not wide enough. There are TWO strap stations
+# 32 mm apart and TWO collars, and the cap was a 26 mm block placed at
+# X 128, so it spanned 128 to 154 and the second collar starts at 158. It
+# did not reach the second collar at all, and its own tie slots were at
+# X 134 to 138 against the frame's at 130 to 134, so a tie could not pass
+# through both. The step text said "drop the cap over the collars", plural.
+#
+# The cause is that the strap positions were a literal tuple inside frame(),
+# a second copy inside assembly.py, and nothing at all inside saddle_cap().
+# Three registries, no comparison, which is the same failure as rod_clamp
+# missing from the BOM. They live here now and everything reads them.
+STRAP_X = (X_RIB_BACK + 8.0, X_SADDLE_END - 16.0)   # -X end of each groove
+STRAP_W = 4.0                        # groove length along X
+STRAP_Y = 11.5                       # groove centre in Y, +- STRAP_HALF
+STRAP_HALF = 1.6                     # takes a 2.5 to 3 mm zip tie
+
+# The grooves are OPEN on the outside flank, and that is deliberate, not a
+# miss: the saddle and the cap are both 26 wide and the groove reaches
+# Y 13.1, so the tie runs in a channel on each flank and wraps the whole
+# assembly. A captured slot would need a wider saddle, and the frame is
+# printed. The cap matches the frame rather than improving on it.
+
+# A collar is centred on its strap, so the tie pulls on the middle of it.
+COLLAR_X = tuple(xs + STRAP_W / 2.0 - COLLAR_L / 2.0 for xs in STRAP_X)
+
+# The cap bridges BOTH collars with 1 mm of overhang at each end. It has to
+# stay inside the saddle, which runs X_RIB_BACK + 3 to X_SADDLE_END - 6.
+CAP_X0 = COLLAR_X[0] - 1.0
+CAP_X1 = COLLAR_X[-1] + COLLAR_L + 1.0
+CAP_L = CAP_X1 - CAP_X0
+CAP_W = 26.0                         # same width as the saddle it sits on
+CAP_T = 11.0                         # NOT 9. See the roof check in check_drive
+
+# --------------------------------------------- where the rod clamp sits
+# The carriage's top face, which is the clamp's seating plane and the mouth of
+# the two blind M3 tap holes. It was a local inside carriage() and nowhere
+# else, so assembly.py placed the clamp with dx only and drew it at z -6.5,
+# which is below the baseplate: the clamp floated under the bench in the one
+# view the students actually look at.
+CLAMP_SEAT_Z = SYR_H + DISC_D / 2.0 + 3.0
+CLAMP_TAP_DEEP = 10.0                # z1 - 9 to z1 + 1, blind, skin kept over
+
+# The screw's length is load bearing the same way the rib screws are: it
+# crosses the 5 mm clamp bar before any thread reaches the carriage, so an
+# M3 x 16 leaves 11 mm for a 10 mm hole and BOTTOMS OUT. A bottomed screw
+# feels tight and clamps nothing, which is the worst failure available here
+# because this clamp is the only thing carrying the plunger.
+CLAMP_SCREW_L = 12.0
 HALF_W = ROD_SPACING / 2 + LM_OD / 2 + 5.0
 
 X_STOP = X_RIB - STOP_T        # the stop's own -X face
@@ -596,9 +649,11 @@ def frame():
     sad = diff(sad, box((X_RIB_BACK + 2.0, X_SADDLE_END),
                         (-(SADDLE_BORE / 2 + FIT), SADDLE_BORE / 2 + FIT),
                         (SYR_H, SYR_H + 40)))
-    for xs in (X_RIB_BACK + 8.0, X_SADDLE_END - 16.0):
-        for dy in (-11.5, 11.5):
-            sad = diff(sad, box((xs, xs + 4.0), (dy - 1.6, dy + 1.6), (-1, SYR_H + 10)))
+    for xs in STRAP_X:
+        for dy in (-STRAP_Y, STRAP_Y):
+            sad = diff(sad, box((xs, xs + STRAP_W),
+                                (dy - STRAP_HALF, dy + STRAP_HALF),
+                                (-1, SYR_H + 10)))
     body = union(body, sad)
 
     # Spring anchor post, and baseplate holes for upright mounting.
@@ -878,10 +933,26 @@ def rod_clamp():
 
 
 def saddle_cap():
-    cap = box((0.0, 26.0), (-13.0, 13.0), (0.0, 9.0))
-    cap = diff(cap, cyl_x(SADDLE_BORE / 2 + FIT, (-1, 27.0), z=0.0))
-    for dy in (-11.5, 11.5):
-        cap = diff(cap, box((6.0, 10.0), (dy - 1.6, dy + 1.6), (-1, 10)))
+    """The barrel clamp. ONE part, and it spans both collars.
+
+    Drawn in its own coordinates with the -X face at 0, so the assembly
+    places it at CAP_X0. Everything about it is derived: the length comes
+    from where the collars actually are, the tie grooves come from where the
+    frame's actually are, and the thickness comes from the roof check.
+
+    The old version was a 26 mm block with its grooves 4 mm off the frame's
+    and no reach to the far collar, and its roof over the channel was
+    CAP_T - (SADDLE_BORE / 2 + FIT) = 0.65 mm, which is one perimeter at a
+    0.6 nozzle, on the one surface the zip tie pulls against.
+    """
+    cap = box((0.0, CAP_L), (-CAP_W / 2, CAP_W / 2), (0.0, CAP_T))
+    cap = diff(cap, cyl_x(SADDLE_BORE / 2 + FIT, (-1, CAP_L + 1.0), z=0.0))
+    for xs in STRAP_X:
+        x0 = xs - CAP_X0
+        for dy in (-STRAP_Y, STRAP_Y):
+            cap = diff(cap, box((x0, x0 + STRAP_W),
+                                (dy - STRAP_HALF, dy + STRAP_HALF),
+                                (-1, CAP_T + 1)))
     return cap
 
 

@@ -18,9 +18,14 @@ LIGHT = LIGHT / np.linalg.norm(LIGHT)
 fails = []
 
 
+passes = [0]
+
+
 def check(name, ok, detail=""):
     print("%-4s %-50s %s" % ("PASS" if ok else "FAIL", name, detail))
-    if not ok:
+    if ok:
+        passes[0] += 1
+    else:
         fails.append(name)
 
 
@@ -552,14 +557,38 @@ if _nut["flange_t"] is not None:
 import atexit
 
 
+# How many checks a COMPLETE run performs. atexit cannot tell "finished"
+# from "crashed on line 600", and it printed "all checks passed" twice in one
+# afternoon on runs that died partway: once when trimesh.contains() wanted
+# rtree, which is not installed and does not raise but writes a traceback to
+# stderr, and once on a bare NameError. Both times every check after the
+# crash never ran and the summary still said everything was fine. That is a
+# dead instrument reporting success, which is the one failure this whole file
+# exists to prevent, so it now counts itself.
+EXPECTED = 112
+
+
 @atexit.register
 def _summary():
+    n = len(fails) + passes[0]
     if fails:
-        print("\n%d check(s) failed:" % len(fails))
+        print("\n%d of %d check(s) failed:" % (len(fails), n))
         for f in fails:
             print("  - %s" % f)
-    else:
-        print("\nall checks passed")
+        raise SystemExit(1)
+    if n < EXPECTED:
+        print("\nINCOMPLETE RUN, which is NOT a pass. %d checks of %d ran "
+              "and then something stopped the file." % (n, EXPECTED))
+        print("  Nothing printed above is wrong. %d checks did not execute."
+              % (EXPECTED - n))
+        print("  Scroll up for a traceback. trimesh.contains() does this")
+        print("  silently when rtree is missing: it writes the traceback to")
+        print("  stderr and keeps going with the module half loaded.")
+        raise SystemExit(1)
+    if n > EXPECTED:
+        print("\n%d checks ran, EXPECTED says %d. Raise EXPECTED to %d."
+              % (n, EXPECTED, n))
+    print("\nall %d checks passed" % n)
 
 
 # ------------------------------------------------------------ the material
@@ -894,10 +923,21 @@ check("every BOM status is one the roll-up counts",
 
 # The printed set is complete, so saying otherwise on the list is a lie the
 # students would act on by reprinting parts that are sitting on the bench.
-_unprinted = [r[2] for r in _BOM.BOM if r[0] == "PRINTED" and r[4] != "HAVE"]
-check("the BOM agrees that the printing is done",
-      not _unprinted,
-      "still not marked HAVE: %s" % ", ".join(_unprinted) if _unprinted else
+# Every printed row is either on the bench or explicitly queued. A row that
+# is neither is a part nobody knows the state of. This check used to demand
+# that ALL of them be HAVE, which was true for one afternoon and then the
+# saddle cap turned out to need remaking, so the honest form is to require a
+# declared state and name what is still on the queue.
+_queued = [r[2] for r in _BOM.BOM if r[0] == "PRINTED" and r[4] == "PRINT"]
+_undeclared = [r[2] for r in _BOM.BOM if r[0] == "PRINTED"
+               and r[4] not in ("HAVE", "PRINT")]
+check("every printed part has a declared state",
+      not _undeclared,
+      "neither on the bench nor queued: %s" % ", ".join(_undeclared)
+      if _undeclared else
+      ("%d of %d off the machine, STILL TO PRINT: %s"
+       % (len(_bom_printed) - len(_queued), len(_bom_printed),
+          ", ".join(_queued))) if _queued else
       "all %d printed line items are off the machine" % len(_bom_printed))
 
 # A note that names a DROP part as live sends somebody shopping for it.
@@ -965,3 +1005,203 @@ for _f, _t in (("wiring.py's report", _flat),
           "notch in the lead" in _t and "by the notch in the side" not in _t,
           "the datasheet says 'pin 1 is noted by the notch in the lead', and "
           "the package has moulding marks of its own")
+
+# ----------------------------------------- the cap has to cover both collars
+# Kevin, looking at the 3-D model: "the one piece that goes on top of the
+# syringe looks like it is not wide enough to actually cover the syringe top".
+# It was not a width problem. There are two strap stations 32 mm apart and two
+# collars, and the cap was a 26 mm block at X 128 spanning 128 to 154 while
+# the second collar starts at 158. It missed the far collar completely, and
+# its own tie grooves sat at X 134 to 138 against the frame's 130 to 134, so
+# no tie could pass through both. Three copies of the strap positions existed
+# (frame(), assembly.py, and nothing in saddle_cap) and none were compared.
+_cap_x0, _cap_x1 = S.CAP_X0, S.CAP_X1
+for _i, _cx in enumerate(S.COLLAR_X):
+    check("the cap reaches collar %d" % (_i + 1),
+          _cap_x0 <= _cx and _cx + S.COLLAR_L <= _cap_x1,
+          "collar %d spans X %.0f to %.0f, cap spans %.0f to %.0f"
+          % (_i + 1, _cx, _cx + S.COLLAR_L, _cap_x0, _cap_x1))
+
+# A groove in the cap that does not line up with one in the frame is a groove
+# the tie cannot use. The frame is printed, so the cap is the one that moves.
+# Both now read STRAP_X, so comparing the two tuples would be comparing a
+# constant with itself: a check that cannot fail is not a check. So probe the
+# MESHES instead, at the mid-plane of each strap, and require the cap to be
+# open where the frame is open and solid in between.
+# trimesh.contains() needs rtree, which is not installed here. It did not
+# raise: it printed a traceback to stderr and silently took every check after
+# it with it, so "all checks passed" was printed with the roof check never
+# having run. A dead instrument reporting success. Sections work without
+# rtree, and measuring the Y extent of a slice is a better test anyway.
+def _ymax_at(mesh, x):
+    """Half-width of the solid at this X, measured off the mesh."""
+    sec = mesh.section(plane_origin=[x, 0, 0], plane_normal=[1, 0, 0])
+    if sec is None:
+        return None
+    return float(np.abs(sec.vertices[:, 1]).max())
+
+
+_capm = S.build()["saddle_cap"]
+_framem = S.build()["frame"]
+# At a strap the flanks are cut from STRAP_Y - STRAP_HALF out to the edge, so
+# the solid stops at 9.9. Between straps it runs the full 13.0.
+_want_cut = S.STRAP_Y - S.STRAP_HALF
+_want_full = S.CAP_W / 2.0
+_at_strap = [_ymax_at(_capm, xs + S.STRAP_W / 2.0 - S.CAP_X0)
+             for xs in S.STRAP_X]
+_between = _ymax_at(_capm, (S.STRAP_X[0] + S.STRAP_W + S.STRAP_X[1]) / 2.0
+                    - S.CAP_X0)
+check("the cap is cut through where the frame's tie grooves are",
+      all(v is not None and abs(v - _want_cut) < 0.2 for v in _at_strap)
+      and _between is not None and abs(_between - _want_full) < 0.2,
+      "measured off the mesh: %s mm at the two straps against %.1f expected, "
+      "and %.1f mm between them against %.1f. The groove really is there"
+      % (", ".join("%.1f" % v for v in _at_strap), _want_cut,
+         _between, _want_full))
+
+# And the frame is open at the same X, or the tie has nowhere to go on the
+# way down. The frame section at a strap is the whole plate, so measure the
+# saddle flank directly instead: slice in Z just under the saddle top.
+_fsec = _framem.section(plane_origin=[0, 0, S.SYR_H - 4.0],
+                        plane_normal=[0, 0, 1])
+_fx = _fsec.vertices[:, 0]
+_fy = _fsec.vertices[:, 1]
+_near = [abs(_fy[k]) > _want_cut and abs(_fy[k]) < _want_full + 0.1
+         for k in range(len(_fy))
+         if any(abs(_fx[k] - (xs + d)) < 0.05
+                for xs in S.STRAP_X for d in (0.0, S.STRAP_W))]
+check("the frame is cut through at the same two stations",
+      any(_near),
+      "the saddle flanks carry groove edges at X %s, so one tie passes the "
+      "cap and the frame at the same station"
+      % ", ".join("%.0f" % xs for xs in S.STRAP_X))
+
+# The cap must not hang off the saddle it clamps to.
+_sad_x0, _sad_x1 = S.X_RIB_BACK + 3.0, S.X_SADDLE_END - 6.0
+check("the cap sits inside the frame's saddle",
+      _sad_x0 <= _cap_x0 and _cap_x1 <= _sad_x1,
+      "cap X %.0f to %.0f inside saddle X %.0f to %.0f, %.0f and %.0f mm spare"
+      % (_cap_x0, _cap_x1, _sad_x0, _sad_x1,
+         _cap_x0 - _sad_x0, _sad_x1 - _cap_x1))
+
+# The roof over the channel is what the zip tie pulls against. At CAP_T = 9
+# it was 0.65 mm, which is ONE perimeter at a 0.6 nozzle: the slicer would
+# have made a thread or a hole there, on the loaded surface.
+_roof = S.CAP_T - (S.SADDLE_BORE / 2.0 + S.FIT)
+_PERIM = 0.6
+check("the cap has a real roof over the barrel channel",
+      _roof >= 3 * _PERIM,
+      "%.2f mm, which is %.1f perimeters at a %.1f nozzle. At CAP_T = 9 it "
+      "was 0.65 mm, one perimeter, and the tie pulls on exactly that face"
+      % (_roof, _roof / _PERIM, _PERIM))
+
+# And the cap is still only as wide as the saddle, which is what Kevin's
+# words described. It was never the defect, but it is worth a number.
+check("the cap is as wide as the saddle it clamps onto",
+      abs(S.CAP_W - 26.0) < 1e-6,
+      "%.0f mm wide over a %.0f mm barrel in a %.1f mm collar, so %.2f mm of "
+      "flat land each side of the channel for the tie to pull on"
+      % (S.CAP_W, S.SYR_BARREL_D, S.SADDLE_BORE,
+         S.CAP_W / 2.0 - (S.SADDLE_BORE / 2.0 + S.FIT)))
+
+# --------------------------------- the rod clamp was floating under the bench
+# Found while writing the assembly instructions, which is the point of writing
+# them: every step has to name a fastener, and the rod clamp's named an M3 x 16
+# that cannot work. Three defects in one part.
+#
+# 1. assembly.py placed it with dx only, so it drew at Z -6.5 to 5.0 while the
+#    carriage it bolts to spans 16 to 65.2. It hung 57 mm below its seat, under
+#    the baseplate, in the one view the students look at. CLAMP_SEAT_Z was a
+#    local inside carriage() and nothing outside could see it.
+_clamp = [m for n, m, _c, _e, _t in _AS.parts() if n == "rod clamp"][0]
+_carr = [m for n, m, _c, _e, _t in _AS.parts() if n == "carriage"][0]
+check("the rod clamp is on the carriage, not under the bench",
+      _carr.bounds[0][2] <= _clamp.bounds[0][2]
+      and _clamp.bounds[1][2] <= _carr.bounds[1][2],
+      "clamp Z %.1f to %.1f inside the carriage's %.1f to %.1f, seating on "
+      "its top face at %.1f"
+      % (_clamp.bounds[0][2], _clamp.bounds[1][2],
+         _carr.bounds[0][2], _carr.bounds[1][2], S.CLAMP_SEAT_Z))
+
+# The general form, which is the check that was actually missing. Z = 0 is the
+# bench. Anything below it is a part that was placed without the offset it
+# needed, and a missing dz is silent: the mesh is valid, the volume is right,
+# the part is simply in the wrong place.
+_below = [(n, m.bounds[0][2]) for n, m, _c, _e, _t in _AS.parts()
+          if m.bounds[0][2] < -1e-6]
+check("nothing in the assembly hangs below the baseplate",
+      not _below,
+      "; ".join("%s reaches z=%.1f" % d for d in _below) if _below else
+      "%d parts, lowest point z=%.2f, which is the frame's own underside"
+      % (len(_AS.parts()),
+         min(m.bounds[0][2] for _n, m, _c, _e, _t in _AS.parts())))
+
+# 2. The screw crosses the clamp bar before any thread reaches the carriage,
+#    so the length works exactly like the rib screws. An M3 x 16 leaves 11 mm
+#    for a 10 mm blind hole: it bottoms out, which feels tight and clamps
+#    nothing. That is the worst failure here, because this clamp is the only
+#    thing carrying the plunger.
+_eng_clamp = S.CLAMP_SCREW_L - S.CLAMP_T
+check("the rod clamp screw does not bottom out",
+      _eng_clamp <= S.CLAMP_TAP_DEEP - 2.0,
+      "M3 x %.0f spends %.0f mm crossing the bar and puts %.0f mm into a "
+      "%.0f mm blind hole, %.0f mm spare. An M3 x 16 would need 11 and bottom"
+      % (S.CLAMP_SCREW_L, S.CLAMP_T, _eng_clamp, S.CLAMP_TAP_DEEP,
+         S.CLAMP_TAP_DEEP - _eng_clamp))
+check("the rod clamp screw still reaches real thread",
+      _eng_clamp >= 5.0,
+      "%.0f mm of M3 in printed wall. Two of them at %.0f mm of thread form "
+      "shear is far past the 1.5 N of seal friction the plunger actually sees"
+      % (_eng_clamp, _eng_clamp))
+
+# 3. And it has to be on the list. The rod clamp's screws were in no BOM row
+#    at all: I added the part last commit and not the fasteners it needs.
+_m3_12 = [r for r in _BOM.BOM if r[2] == "M3 x %.0f socket cap" % S.CLAMP_SCREW_L]
+check("the rod clamp's screws are on the list",
+      _m3_12 and _m3_12[0][1] >= 6,
+      "%d x M3 x %.0f: two per rod lock, two per rod stop, two for the rod "
+      "clamp" % (_m3_12[0][1], S.CLAMP_SCREW_L) if _m3_12 else
+      "no M3 x %.0f row exists" % S.CLAMP_SCREW_L)
+
+# ------------------------------- the procedure and the BOM must agree on bolts
+# This is the check that would have caught the rod clamp. assembly.py's prose
+# said "two M3 x 16", the BOM had no M3 x 16 row, and nothing compared them,
+# so a fastener that does not exist and would not work if it did sat in the
+# build instructions for as long as the part has existed. Prose is a registry
+# too, and an unchecked registry drifts.
+import build_steps as _BS
+_bom_fast = {}
+for _r in _BOM.BOM:
+    if _r[0] == "FASTENERS":
+        _bom_fast[_r[2]] = _r[1]
+_steps_fast = {n: q for n, q, _w in _BS.fasteners()}
+
+_missing = sorted(set(_steps_fast) - set(_bom_fast))
+check("every fastener the procedure calls for is on the BOM",
+      not _missing,
+      "called for and not listed: %s" % ", ".join(_missing) if _missing else
+      "%d fastener lines, all of them orderable" % len(_steps_fast))
+
+_unused = sorted(set(_bom_fast) - set(_steps_fast))
+check("every fastener on the BOM is used by a step",
+      not _unused,
+      "on the list and never fitted: %s" % ", ".join(_unused) if _unused else
+      "nothing on the fastener list goes unused")
+
+_short = [(n, _steps_fast[n], _bom_fast[n]) for n in _steps_fast
+          if n in _bom_fast and _bom_fast[n] < _steps_fast[n]]
+check("the BOM buys as many of each as the steps consume",
+      not _short,
+      "; ".join("%s: steps use %d, BOM buys %d" % t for t in _short)
+      if _short else
+      "%d pieces across %d lines, every one accounted for"
+      % (sum(_steps_fast.values()), len(_steps_fast)))
+
+# And no step may be silently dropped from the sheet. The first version of
+# sheet() ran a single page and stopped at step 7 because the page filled,
+# which looks finished and is not: the six it cut include the saddle cap and
+# the rod clamp, the two most likely to be built wrong.
+check("the printed sheet carries every step",
+      len(_BS.steps()) >= 13,
+      "%d steps, and sheet() paginates rather than running off the page"
+      % len(_BS.steps()))

@@ -38,6 +38,11 @@ PLATES = {
     # and they go on in the same five minutes of assembly, so printing them
     # apart would be two ABS heat cycles for 38 minutes of extrusion.
     "rods": [("rod_lock", 2), ("rod_stop", 2)],
+    # The saddle cap on its own, because it is a REPRINT. The one that came
+    # off plate_small spans 26 mm and the two collars it has to clamp are
+    # 44 mm apart, so it never reached the second one. Nothing else on that
+    # plate was wrong, so nothing else gets reprinted.
+    "cap": [("saddle_cap", 1)],
 }
 WANT = PLATES["small"]
 

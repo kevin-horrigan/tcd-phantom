@@ -46,8 +46,10 @@ X_COUPLER = (S.X_MOTOR_BACK, S.X_MOTOR_BACK + S.COUPLER_L)
 X_SCREW = (X_COUPLER[1] - 10.0, S.X_RIB + S.BEAR_W)
 CARR_AT = S.X_CARR_MIN               # retracted, which is where you build it
 
-STRAP_X = (S.X_RIB_BACK + 8.0, S.X_SADDLE_END - 16.0)
-COLLAR_X = tuple(xs + 2.0 - S.COLLAR_L / 2.0 for xs in STRAP_X)
+# These used to be a second copy of the numbers in frame(), and the cap was
+# drawn to neither. One source now, in syringe_drive.
+STRAP_X = S.STRAP_X
+COLLAR_X = S.COLLAR_X
 
 C_FRAME = "#cdc2b4"
 C_CARRIAGE = "#4d7699"
@@ -256,16 +258,23 @@ def parts():
          "parts you reprint."),
 
         ("saddle cap + ties", both(at(P["saddle_cap"],
-                                      dx=S.X_RIB_BACK + 6.0, dz=S.SYR_H),
+                                      dx=S.CAP_X0, dz=S.SYR_H),
                                    zip_ties()),
          C_CAP, [0, 0, 180],
-         "Drop the cap over the collars and run a zip tie through each pair "
-         "of slots, down through the frame and back. Snug, not crushing: the "
-         "collar wall is 0.93 mm and it is holding a syringe, not a driveshaft."),
+         "ONE cap, and it bridges BOTH collars: X %.0f to %.0f, with the "
+         "collars at %.0f and %.0f. Drop it over them and run a zip tie "
+         "through each pair of grooves, down around the frame and back. The "
+         "grooves are open on the outside flank on purpose, on the cap and "
+         "on the frame both, so the tie wraps the whole assembly instead of "
+         "threading a captured slot. Snug, not crushing: the collar wall is "
+         "0.93 mm and it is holding a syringe, not a driveshaft."
+         % (S.CAP_X0, S.CAP_X1, S.COLLAR_X[0], S.COLLAR_X[1])),
 
-        ("rod clamp", at(P["rod_clamp"], dx=CARR_AT), C_CLAMP, [0, 0, 130],
+        ("rod clamp", at(P["rod_clamp"], dx=CARR_AT, dz=S.CLAMP_SEAT_Z),
+         C_CLAMP, [0, 0, 130],
          "Last. Drop the plunger disc into the carriage pocket, lay the "
-         "clamp tongue into the rod slot, and run two M3 x 16 down into the "
+         "clamp tongue into the rod slot, and run two M3 x %.0f down into the "
+         % S.CLAMP_SCREW_L +
          "carriage. The bar should still stand about 1.25 mm proud when the "
          "tongue touches the rod; the bolts close that gap and pin the rod. "
          "This is what makes the whole drive independent of the thumb disc, "
